@@ -20,6 +20,7 @@ var _busy: bool = false
 
 func _ready() -> void:
 	_runner.state_changed.connect(func(_state: BattleState) -> void: _view.refresh())
+	_runner.action_applied.connect(func(_action: BattleAction, events: Array[Dictionary]) -> void: _view.show_events(events))
 	reset_harness()
 
 

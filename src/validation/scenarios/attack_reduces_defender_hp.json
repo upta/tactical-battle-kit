@@ -47,6 +47,7 @@
     {"op": "assert_value", "checkpoint": "after_attack", "path": "harness_state.units.r1.hp", "comparator": "lt", "expected": 12},
     {"op": "assert_value", "checkpoint": "after_attack", "path": "harness_state.units.b1.status", "comparator": "eq", "expected": "active"},
     {"op": "assert_value", "checkpoint": "after_attack", "path": "harness_state.view.units_drawn", "comparator": "eq", "expected": 2},
+    {"op": "assert_value", "checkpoint": "after_attack", "path": "harness_state.view.effects_active", "comparator": "gt", "expected": 0},
     {"op": "assert_value", "checkpoint": "after_attack", "path": "harness_state.ended", "comparator": "eq", "expected": false},
     {"op": "quit"}
   ]

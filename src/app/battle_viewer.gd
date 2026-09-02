@@ -14,7 +14,7 @@ const BATTLES: Array[String] = [
 const BOOT_MARKER := "[Kit] Battle ready: "
 
 @export var autoplay: bool = true
-@export var step_interval: float = 0.25
+@export var step_interval: float = 0.5
 
 @onready var _view: BattleView = %BattleView
 @onready var _runner: BattleRunner = %BattleRunner
@@ -33,6 +33,7 @@ func _ready() -> void:
 	_timer.wait_time = step_interval
 	_timer.timeout.connect(_on_step_timer)
 	_runner.state_changed.connect(_on_state_changed)
+	_runner.action_applied.connect(_on_action_applied)
 	_runner.battle_ended.connect(_on_battle_ended)
 	_restart()
 
@@ -94,6 +95,10 @@ func _step() -> void:
 	_stepping = true
 	await _runner.step()
 	_stepping = false
+
+
+func _on_action_applied(_action: BattleAction, events: Array[Dictionary]) -> void:
+	_view.show_events(events)
 
 
 func _on_state_changed(state: BattleState) -> void:

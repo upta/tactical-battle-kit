@@ -111,8 +111,10 @@ Work items are disposable. Documentation is not.
 
 - Godot mono builds sometimes exit with `-1073741819` (access violation)
   during teardown after every artifact is written. `simulate.ps1` trusts the
-  `RESULT` line over the process exit code for this reason. If a scenario
-  run shows that code with `summary.json` saying pass, suspect a static var
+  `RESULT` line over the process exit code for this reason. The same code
+  from the `--import` pass in `check_scripts.ps1` is the same teardown
+  crash with nothing imported wrong: re-run, it passes. If a scenario run
+  shows that code with `summary.json` saying pass, suspect a static var
   holding an object or closure (B-1).
 
 ## Style
