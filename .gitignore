@@ -10,7 +10,7 @@
 /src/artifacts/*
 !/src/artifacts/.gdignore
 
-# CI build output
+# CI and local web export output
 /build/
 /.claude/skills/author-battle-ruleset
 /.claude/skills/run-balance-sim

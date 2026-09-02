@@ -43,6 +43,17 @@ godot --path src       # the viewer: Space steps, P autoplay, R reseed, N next e
 Requires Godot 4.7 (standard or mono), PowerShell 7 for the runners, git with
 submodules. Linux and macOS: `./setup.sh`, then the runners under `pwsh`.
 
+## Web playtests
+
+Every push to any branch, main included, exports the Web build and uploads
+it to Cloudflare R2 at `https://<bucket-public-url>/tactical-battle-kit/<branch>/index.html`
+(D13). The Actions run summary prints the link. Deleting a branch prunes its
+build. Two repository secrets are required and never copy between repos:
+`CLOUDFLARE_API_TOKEN` (Workers R2 Storage: Edit) and `CLOUDFLARE_ACCOUNT_ID`;
+the `R2_PUBLIC_BASE` variable makes the summary link clickable. Locally,
+`powershell src/tools/export_web.ps1` then `powershell src/tools/serve_web.ps1`
+(run-web skill).
+
 ## The examples
 
 | Example | Shows |

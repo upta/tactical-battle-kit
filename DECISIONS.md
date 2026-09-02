@@ -65,6 +65,12 @@ The code is agent-written and the compile gate plus the two proof gates are
 what matter. gdtoolkit drifted between releases, nothing local can run it,
 and a check nobody can reproduce is noise.
 
+**D13: Every branch, main included, deploys a web playtest build to Cloudflare R2.**
+`playtest.yml` exports the Web preset on push and uploads under
+`tactical-battle-kit/<branch>/`; deleting the branch prunes it. Same bucket and
+mechanism as the jam games; main is included because there is no itch.io
+release and the main build is the thing to show people.
+
 ## Closed
 
 (none yet)

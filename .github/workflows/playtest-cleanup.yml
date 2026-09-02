@@ -1,0 +1,77 @@
+name: Playtest cleanup
+
+# The other half of playtest.yml (D9): deleting a branch prunes its playtest
+# build from R2. Without this, every merged branch leaves ~40 MiB of orphaned
+# objects in the bucket forever — nothing else ever deletes them.
+#
+# Runs on branch deletion, which is what /merge does after a successful
+# fast-forward, so the normal workflow cleans up with no extra step. The
+# manual dispatch is for prefixes orphaned by a branch that was deleted
+# before this workflow existed.
+#
+# R2 has no recursive delete and wrangler has no object-list command, so the
+# key set has to come from somewhere: playtest.yml uploads a _manifest.txt of
+# exactly what it wrote. The hardcoded fallback covers prefixes uploaded
+# before manifests existed.
+on:
+  delete:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch name whose playtest build should be pruned"
+        required: true
+
+env:
+  R2_BUCKET: playtests
+
+jobs:
+  prune:
+    name: Prune R2 playtest build
+    # Tag deletions share the delete event and never had an upload.
+    if: github.event_name == 'workflow_dispatch' || github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete the branch's R2 objects
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BRANCH: ${{ github.event.inputs.branch || github.event.ref }}
+        # Slugging must match playtest.yml's exactly, or this prunes nothing
+        # and reports success.
+        run: |
+          REPO_SLUG=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
+          BRANCH_SLUG=$(echo "$BRANCH" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
+          PREFIX="$REPO_SLUG/$BRANCH_SLUG"
+          echo "Pruning r2://$R2_BUCKET/$PREFIX/"
+
+          if npx wrangler@4 r2 object get "$R2_BUCKET/$PREFIX/_manifest.txt" \
+               --file manifest.txt --remote 2>/dev/null; then
+            echo "Using uploaded manifest."
+          else
+            echo "No manifest — falling back to the standard Godot web export file set."
+            cat > manifest.txt <<'EOF'
+          _manifest.txt
+          index.html
+          index.js
+          index.wasm
+          index.pck
+          index.png
+          index.icon.png
+          index.apple-touch-icon.png
+          index.audio.worklet.js
+          index.audio.position.worklet.js
+          index.offline.html
+          index.service.worker.js
+          index.manifest.json
+          EOF
+          fi
+
+          # Deletes are best-effort: the fallback list names files a given
+          # export may never have produced, and a missing key is not a failure.
+          while read -r f; do
+            [ -n "$f" ] || continue
+            npx wrangler@4 r2 object delete "$R2_BUCKET/$PREFIX/$f" --remote || true
+          done < manifest.txt
+
+          echo "### Playtest pruned" >> "$GITHUB_STEP_SUMMARY"
+          echo "Removed \`r2://$R2_BUCKET/$PREFIX/\`" >> "$GITHUB_STEP_SUMMARY"
