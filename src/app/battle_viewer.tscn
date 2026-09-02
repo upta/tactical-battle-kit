@@ -16,7 +16,7 @@ script = ExtResource("3")
 
 [node name="StepTimer" type="Timer" parent="."]
 unique_name_in_owner = true
-wait_time = 0.25
+wait_time = 0.5
 
 [node name="UI" type="CanvasLayer" parent="."]
 
@@ -28,9 +28,18 @@ offset_right = 1264.0
 offset_bottom = 40.0
 text = "Loading..."
 
-[node name="Help" type="Label" parent="UI"]
+[node name="ActionBar" type="HBoxContainer" parent="UI"]
+unique_name_in_owner = true
+offset_left = 16.0
+offset_top = 648.0
+offset_right = 1264.0
+offset_bottom = 684.0
+theme_override_constants/separation = 8
+
+[node name="Hint" type="Label" parent="UI"]
+unique_name_in_owner = true
 offset_left = 16.0
 offset_top = 690.0
 offset_right = 1264.0
 offset_bottom = 712.0
-text = "Space: step one decision   P: toggle autoplay   R: restart with a new seed   N: next example battle   (or launch with -- --battle res://path.json)"
+text = "Space: step   P: autoplay   R: reseed   N: next battle   H: play a side"

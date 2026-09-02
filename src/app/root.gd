@@ -12,6 +12,8 @@ const ACTION_KEYS: Dictionary[String, Key] = {
 	"sim_play": KEY_P,
 	"sim_restart": KEY_R,
 	"sim_next_battle": KEY_N,
+	"sim_toggle_human": KEY_H,
+	"sim_submit": KEY_ENTER,
 }
 
 

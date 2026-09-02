@@ -25,6 +25,10 @@ This repository serves two purposes:
 - **Balance suites.** JSON: a battle, N runs, matchups of AIs, an optional
   parameter sweep, assertions on win rates, rounds, event-derived metrics and
   the game's own numbers. Exit codes like a test runner. Runs in CI.
+- **Playable.** `HumanController` hands any faction to a person: the viewer
+  rings your units, highlights moves, targets and area anchors, and puts
+  targetless actions in a button bar, all mapped generically off action
+  params so every ruleset is playable with no per-game UI code.
 - **In-engine proof.** The
   [agentic-godot-validation](https://github.com/upta/agentic-godot-validation)
   kit drives the debug view in a real engine and keeps screenshots.
@@ -37,7 +41,7 @@ cd tactical-battle-kit
 ./setup.ps1            # materializes the validation kit symlinks, imports once
 ./simulate.ps1         # every balance suite, headless (~1 min)
 ./validate.ps1         # the scenario suite, windowed engine
-godot --path src       # the viewer: Space steps, P autoplay, R reseed, N next example
+godot --path src       # the viewer: Space steps, P autoplay, R reseed, N next example, H play a side
 ```
 
 Requires Godot 4.7 (standard or mono), PowerShell 7 for the runners, git with

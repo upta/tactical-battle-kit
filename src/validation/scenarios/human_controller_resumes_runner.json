@@ -1,0 +1,62 @@
+{
+  "scenario_id": "human_controller_resumes_runner",
+  "version": 4,
+  "description": "Red is a HumanController. One step must suspend the runner waiting for a decision with the attack among the pending choices and the view highlighting them; submitting that attack must resume the runner, apply it, and lower the defender's hp.",
+  "harness_scene": "res://validation/harnesses/human_play_harness.tscn",
+  "done_contract": {
+    "step_action": "sim_step",
+    "submit_action": "sim_submit",
+    "spearman_max_hp": 12,
+    "wait_frame_budget": 120
+  },
+  "artifact_contract": {
+    "required_files": [
+      "summary.json",
+      "event_log.json",
+      "scene_tree.json",
+      "console.log",
+      "screenshots/waiting.png",
+      "screenshots/after_submit.png"
+    ],
+    "missing_file_is_failure": true
+  },
+  "exit_codes": {
+    "pass": 0,
+    "assertion_failure": 1,
+    "runtime_error": 2,
+    "timeout": 3,
+    "artifact_generation_error": 4
+  },
+  "cli_contract": {
+    "command_template": "godot --path <project> -- --test-mode --scenario <path> --artifacts <dir>"
+  },
+  "steps": [
+    {"op": "load_harness", "scene": "res://validation/harnesses/human_play_harness.tscn"},
+    {"op": "wait_frames", "frames": 5},
+    {"op": "press_action", "action": "sim_step"},
+    {"op": "wait_frames", "frames": 2},
+    {"op": "release_action", "action": "sim_step"},
+    {"op": "wait_until", "path": "harness_state.human_waiting", "comparator": "eq", "expected": true, "timeout_frames": 120},
+    {"op": "wait_frames", "frames": 3},
+    {"op": "checkpoint", "name": "waiting"},
+    {"op": "assert_value", "checkpoint": "waiting", "path": "harness_state.human_faction", "comparator": "eq", "expected": "red"},
+    {"op": "assert_value", "checkpoint": "waiting", "path": "harness_state.decisions_requested", "comparator": "eq", "expected": 1},
+    {"op": "assert_value", "checkpoint": "waiting", "path": "harness_state.pending_attacks", "comparator": "gt", "expected": 0},
+    {"op": "assert_value", "checkpoint": "waiting", "path": "harness_state.busy", "comparator": "eq", "expected": true},
+    {"op": "assert_value", "checkpoint": "waiting", "path": "harness_state.units.b1.hp", "comparator": "eq", "expected": 12},
+    {"op": "assert_value", "checkpoint": "waiting", "path": "harness_state.view.choices", "comparator": "gt", "expected": 0},
+    {"op": "assert_value", "checkpoint": "waiting", "path": "harness_state.view.selected", "comparator": "eq", "expected": "r1"},
+    {"op": "press_action", "action": "sim_submit"},
+    {"op": "wait_frames", "frames": 2},
+    {"op": "release_action", "action": "sim_submit"},
+    {"op": "wait_until", "path": "harness_state.units.b1.hp", "comparator": "lt", "expected": 12, "timeout_frames": 120},
+    {"op": "wait_frames", "frames": 3},
+    {"op": "checkpoint", "name": "after_submit"},
+    {"op": "assert_value", "checkpoint": "after_submit", "path": "harness_state.submitted", "comparator": "eq", "expected": 1},
+    {"op": "assert_value", "checkpoint": "after_submit", "path": "harness_state.human_waiting", "comparator": "eq", "expected": false},
+    {"op": "assert_value", "checkpoint": "after_submit", "path": "harness_state.step_count", "comparator": "eq", "expected": 1},
+    {"op": "assert_value", "checkpoint": "after_submit", "path": "harness_state.busy", "comparator": "eq", "expected": false},
+    {"op": "assert_value", "checkpoint": "after_submit", "path": "harness_state.view.choices", "comparator": "eq", "expected": 0},
+    {"op": "quit"}
+  ]
+}

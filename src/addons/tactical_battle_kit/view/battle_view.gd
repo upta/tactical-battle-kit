@@ -25,6 +25,8 @@ var state: BattleState = null:
 var _units_drawn: int = 0
 var _cells_drawn: int = 0
 var _effects: Array[Dictionary] = []
+var _choices: Array[BattleAction] = []
+var _selected_id: String = ""
 
 
 func _ready() -> void:
@@ -43,6 +45,8 @@ func describe_ui() -> Dictionary:
 		"cell_size": cell_size,
 		"has_state": state != null,
 		"effects_active": _effects.size(),
+		"choices": _choices.size(),
+		"selected": _selected_id,
 	}
 
 
@@ -55,6 +59,83 @@ func cell_center(cell: Vector2i) -> Vector2:
 		var y := cell.y * h * 0.75 + h * 0.5
 		return Vector2(x, y)
 	return Vector2(cell) * float(cell_size) + Vector2.ONE * float(cell_size) * 0.5
+
+
+## The cell under a local position, or (-1, -1) outside the grid. Hexes are
+## resolved by nearest center among the cells around the row estimate.
+func cell_at_position(local: Vector2) -> Vector2i:
+	if state == null:
+		return Vector2i(-1, -1)
+	if not (state.grid.topology is HexTopology):
+		var cell := Vector2i(floori(local.x / float(cell_size)), floori(local.y / float(cell_size)))
+		return cell if state.grid.in_bounds(cell) else Vector2i(-1, -1)
+	var w := float(cell_size)
+	var h := w * 1.1547
+	var row := floori(local.y / (h * 0.75))
+	var col := floori((local.x - (w * 0.5 if (row & 1) == 1 else 0.0)) / w)
+	var best := Vector2i(-1, -1)
+	var best_distance := INF
+	for dy: int in range(-1, 2):
+		for dx: int in range(-1, 2):
+			var candidate := Vector2i(col + dx, row + dy)
+			if not state.grid.in_bounds(candidate):
+				continue
+			var d := cell_center(candidate).distance_to(local)
+			if d < best_distance:
+				best_distance = d
+				best = candidate
+	if best_distance > w * 0.6:
+		return Vector2i(-1, -1)
+	return best
+
+
+# --- Choices (human input highlights) ---
+
+
+## Legal actions a person may pick from; units with any are ringed, and the
+## selected unit's targets are highlighted by what the action targets.
+func set_choices(legal: Array[BattleAction]) -> void:
+	_choices = legal.duplicate()
+	queue_redraw()
+
+
+func clear_choices() -> void:
+	_choices = []
+	_selected_id = ""
+	queue_redraw()
+
+
+func select_unit(unit_id: String) -> void:
+	_selected_id = unit_id
+	queue_redraw()
+
+
+func selected_unit_id() -> String:
+	return _selected_id
+
+
+func choices_for(unit_id: String) -> Array[BattleAction]:
+	var result: Array[BattleAction] = []
+	for action: BattleAction in _choices:
+		if action.unit_id == unit_id:
+			result.append(action)
+	return result
+
+
+## Cell an action targets on the board, or (-1, -1) for a self action.
+func target_cell_of(action: BattleAction) -> Vector2i:
+	if action.params.has("target_unit_id"):
+		var target := state.unit(action.target_unit_id())
+		if target != null:
+			return target.cell
+	if action.params.has("target_cell"):
+		return action.target_cell()
+	if action.params.has("anchor"):
+		var actor := state.unit(action.unit_id)
+		var anchor: Vector2i = action.params["anchor"]
+		if actor == null or anchor != actor.cell:
+			return anchor
+	return Vector2i(-1, -1)
 
 
 # --- Effects ---
@@ -134,6 +215,8 @@ func _draw() -> void:
 			for cell: Vector2i in effect["cells"]:
 				_draw_cell(cell, Color(1.0, 0.95, 0.4), hex, alpha)
 
+	_draw_choice_cells(hex)
+
 	var faction_index: Dictionary[String, int] = {}
 	for i: int in state.factions.size():
 		faction_index[state.factions[i]] = i
@@ -161,12 +244,51 @@ func _draw() -> void:
 			labels.append({"text": unit_label(unit), "at": anchor + Vector2(0.0, radius + 8.0)})
 		_units_drawn += 1
 
+	_draw_choice_rings(radius)
+
 	# Labels last, so a unit in the next row never covers the one above it.
 	for label: Dictionary in labels:
 		_draw_label(font, str(label["text"]), label["at"], 12, Color.WHITE)
 
 	for effect: Dictionary in _effects:
 		_draw_effect(font, effect)
+
+
+## Cell fills for the selected unit's targets: blue for empty cells it can
+## move to or act on, yellow for area anchors, red is drawn as a ring on the
+## target unit by _draw_choice_rings.
+func _draw_choice_cells(hex: bool) -> void:
+	if _selected_id.is_empty():
+		return
+	for action: BattleAction in choices_for(_selected_id):
+		var cell := target_cell_of(action)
+		if cell.x < 0 or state.unit_at(cell) != null:
+			continue
+		var tint := Color(1.0, 0.9, 0.3) if action.params.has("anchor") else Color(0.35, 0.6, 1.0)
+		_draw_cell(cell, tint, hex, 0.45)
+
+
+func _draw_choice_rings(radius: float) -> void:
+	if _choices.is_empty():
+		return
+	var actionable: Dictionary[String, bool] = {}
+	for action: BattleAction in _choices:
+		actionable[action.unit_id] = true
+	for unit_id: String in actionable.keys():
+		var unit := state.unit(unit_id)
+		if unit == null or not unit.is_on_field():
+			continue
+		var selected := unit_id == _selected_id
+		draw_arc(cell_center(unit.cell), radius * 1.25, 0.0, TAU, 40, Color(1, 1, 1, 1.0 if selected else 0.7), 3.0 if selected else 1.5)
+	if _selected_id.is_empty():
+		return
+	for action: BattleAction in choices_for(_selected_id):
+		var cell := target_cell_of(action)
+		if cell.x < 0:
+			continue
+		var target := state.unit_at(cell)
+		if target != null and target.id != _selected_id:
+			draw_arc(cell_center(cell), radius * 1.25, 0.0, TAU, 40, Color(1.0, 0.25, 0.2), 3.0)
 
 
 ## Human-readable label that fits the cell: the def's display name, or its
