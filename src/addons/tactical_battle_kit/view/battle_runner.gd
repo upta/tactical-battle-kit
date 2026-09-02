@@ -21,6 +21,10 @@ var _turn: BattleTurn = null
 var _started: bool = false
 var _in_round: bool = false
 var _stepping: bool = false
+# Bumped by setup() and abort(): a step suspended on a human decision that
+# resumes after a restart sees a stale generation and returns without
+# touching the new battle.
+var _generation: int = 0
 
 
 ## [param ai_ids] overrides the battle file's faction AI ids; anything left
@@ -40,7 +44,17 @@ func setup(battle_state: BattleState, ai_ids: Dictionary[String, String] = {}, s
 	_turn = null
 	_started = false
 	_in_round = false
+	_stepping = false
+	_generation += 1
 	state_changed.emit(state)
+
+
+## Invalidate a step suspended on a human decision before replacing the
+## battle. The caller then resolves the human (submit(null)) so the coroutine
+## unwinds; it returns false without acting on the new state.
+func abort() -> void:
+	_generation += 1
+	_stepping = false
 
 
 func set_controller(faction: String, controller: AiController) -> void:
@@ -57,6 +71,7 @@ func step() -> bool:
 	if state == null or state.ended or _stepping:
 		return false
 	_stepping = true
+	var generation := _generation
 	var applied := false
 	while not applied and not state.ended:
 		if not _started:
@@ -81,6 +96,8 @@ func step() -> bool:
 		var action: BattleAction = null
 		if controller != null and controller.has_method("choose_async"):
 			action = await controller.call("choose_async", state, engine, _turn, _ai_rngs[_turn.faction])
+			if generation != _generation:
+				return false
 		elif controller != null:
 			action = controller.choose(state, engine, _turn, _ai_rngs[_turn.faction])
 		if action == null:

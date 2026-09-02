@@ -4,9 +4,10 @@ extends Node2D
 # AIs against each other on a timer, or hands one faction to a person, and
 # prints the boot marker the run-game skill greps for. Any battle JSON works:
 # pass `-- --battle res://path.json`, or cycle the bundled examples with N.
-# `-- --human <faction>` or H gives that side to the mouse.
+# The first faction is yours by default; H cycles first, second, then watch
+# (AI vs AI); `-- --human <faction>` or `-- --watch` sets it at launch.
 #
-# Space steps one decision, P toggles autoplay, R restarts with a new seed.
+# Space steps one decision, P pauses the AI, R restarts with a new seed.
 # Playing: click one of your ringed units, then a highlighted cell or enemy;
 # actions with no target (wait, entrench, self heals) are buttons in the bar.
 # Click mapping is generic over action params (target_cell, target_unit_id,
@@ -34,6 +35,8 @@ var _battle_path: String = ""
 var _seed: int = 1
 var _stepping: bool = false
 var _human_faction: String = ""
+var _watch_from_args: bool = false
+var _default_applied: bool = false
 var _human: HumanController = null
 var _cell_choices: Array[BattleAction] = []
 
@@ -42,6 +45,7 @@ func _ready() -> void:
 	_seed = int(Time.get_unix_time_from_system()) % 100000
 	_battle_path = _arg_after("--battle", BATTLES[0])
 	_human_faction = _arg_after("--human", "")
+	_watch_from_args = OS.get_cmdline_user_args().has("--watch") or _human_faction == "none"
 	_timer.wait_time = step_interval
 	_timer.timeout.connect(_on_step_timer)
 	_runner.state_changed.connect(_on_state_changed)
@@ -61,11 +65,21 @@ func _arg_after(flag: String, default: String) -> String:
 func _restart() -> void:
 	_timer.stop()
 	_clear_action_bar()
+	# A step suspended on the previous game's human decision must unwind
+	# before the battle is replaced, or _stepping stays true forever.
+	_runner.abort()
+	if _human != null and _human.is_waiting():
+		_human.submit(null)
+	_stepping = false
 	var state := BattleLoader.load_file(_battle_path)
 	if state == null:
 		_status.text = "Battle failed to load: %s (see the log)" % _battle_path
 		return
 	_runner.setup(state, {}, _seed)
+	if not _default_applied:
+		_default_applied = true
+		if _human_faction.is_empty() and not _watch_from_args and not state.factions.is_empty():
+			_human_faction = state.factions[0]
 	_human = null
 	if not _human_faction.is_empty() and state.factions.has(_human_faction):
 		_human = HumanController.new()
@@ -76,8 +90,12 @@ func _restart() -> void:
 	_view.cell_size = _fit_cell_size(state)
 	_view.position = Vector2(48, 56)
 	_hint.text = _controls_text()
-	if autoplay:
+	# With a person playing, the AI side always runs on the timer and the
+	# first decision is requested immediately; P only pauses AI-vs-AI games.
+	if autoplay or _human != null:
 		_timer.start()
+	if _human != null:
+		_step()
 	print(BOOT_MARKER + state.battle_id)
 
 
@@ -88,8 +106,8 @@ func _fit_cell_size(state: BattleState) -> int:
 
 
 func _controls_text() -> String:
-	var you := "H: play a side" if _human == null else "you are %s (H cycles)" % _human_faction
-	return "Space: step   P: autoplay   R: reseed   N: next battle   %s   Click a ringed unit, then a highlighted cell or enemy" % you
+	var you := "watching AI vs AI (H to play)" if _human == null else "you are %s (H cycles sides, then watch)" % _human_faction
+	return "Space: step   P: pause AI   R: reseed   N: next battle   %s   Click a ringed unit, then a highlighted cell or enemy" % you
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -100,7 +118,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_step()
 	elif event.is_action_pressed("sim_play"):
 		autoplay = not autoplay
-		if autoplay and _runner.is_running():
+		if (autoplay or _human != null) and _runner.is_running():
 			_timer.start()
 		else:
 			_timer.stop()
@@ -110,6 +128,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("sim_next_battle"):
 		_battle_index = (_battle_index + 1) % BATTLES.size()
 		_battle_path = BATTLES[_battle_index]
+		_default_applied = false
+		_human_faction = ""
 		_restart()
 	elif event.is_action_pressed("sim_toggle_human"):
 		_cycle_human()
@@ -169,6 +189,8 @@ func _on_decision_requested(_turn: BattleTurn, legal: Array[BattleAction]) -> vo
 	_view.set_choices(legal)
 	_cell_choices = []
 	_rebuild_action_bar()
+	_on_state_changed(_runner.state)
+	_status.text += "  ·  YOUR MOVE: %d choices" % legal.size()
 
 
 func _handle_click(cell: Vector2i) -> void:
