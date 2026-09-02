@@ -41,7 +41,7 @@ cd tactical-battle-kit
 ./setup.ps1            # materializes the validation kit symlinks, imports once
 ./simulate.ps1         # every balance suite, headless (~1 min)
 ./validate.ps1         # the scenario suite, windowed engine
-godot --path src       # play the first side: click a ringed unit, then a cell; H cycles sides and watch mode
+godot --path src       # start menu: pick a battle, then play a side or watch AI vs AI
 ```
 
 Requires Godot 4.7 (standard or mono), PowerShell 7 for the runners, git with

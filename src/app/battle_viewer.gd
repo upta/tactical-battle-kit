@@ -1,26 +1,26 @@
 extends Node2D
 
-# The dev shell's battle viewer: loads an example battle, plays its declared
-# AIs against each other on a timer, or hands one faction to a person, and
-# prints the boot marker the run-game skill greps for. Any battle JSON works:
-# pass `-- --battle res://path.json`, or cycle the bundled examples with N.
-# The first faction is yours by default; H cycles first, second, then watch
-# (AI vs AI); `-- --human <faction>` or `-- --watch` sets it at launch.
+# The dev shell's battle viewer. Opens on a start menu: pick a battle, then
+# play a faction against its AI or watch AI vs AI. Prints the boot marker
+# the run-game skill greps for as soon as a battle is loaded.
 #
-# Space steps one decision, P pauses the AI, R restarts with a new seed.
 # Playing: click one of your ringed units, then a highlighted cell or enemy;
 # actions with no target (wait, entrench, self heals) are buttons in the bar.
 # Click mapping is generic over action params (target_cell, target_unit_id,
 # anchor), so every ruleset is playable with no per-game code here.
+#
+# Launch flags skip the menu: `-- --battle res://path.json` picks the
+# battle, `-- --human <faction>` or `-- --watch` picks the mode.
+# Keys: Space steps one AI decision, P pauses the AI, R restarts the same
+# setup with a new seed, Escape or M returns to the menu.
 
-const BATTLES: Array[String] = [
-	"res://examples/skirmish/battles/open_field.json",
-	"res://examples/frontier/battles/river_crossing.json",
-	"res://examples/chess/battles/standard.json",
+const BATTLES: Array[Dictionary] = [
+	{"label": "Skirmish (square)", "path": "res://examples/skirmish/battles/open_field.json"},
+	{"label": "Frontier (hex)", "path": "res://examples/frontier/battles/river_crossing.json"},
+	{"label": "Chess", "path": "res://examples/chess/battles/standard.json"},
 ]
 const BOOT_MARKER := "[Kit] Battle ready: "
 
-@export var autoplay: bool = true
 @export var step_interval: float = 0.5
 
 @onready var _view: BattleView = %BattleView
@@ -29,29 +29,39 @@ const BOOT_MARKER := "[Kit] Battle ready: "
 @onready var _hint: Label = %Hint
 @onready var _timer: Timer = %StepTimer
 @onready var _action_bar: HBoxContainer = %ActionBar
+@onready var _menu: PanelContainer = %StartMenu
+@onready var _battle_buttons: HBoxContainer = %BattleButtons
+@onready var _mode_buttons: HBoxContainer = %ModeButtons
+@onready var _menu_button: Button = %MenuButton
 
-var _battle_index: int = 0
 var _battle_path: String = ""
+var _human_faction: String = ""
 var _seed: int = 1
 var _stepping: bool = false
-var _human_faction: String = ""
-var _watch_from_args: bool = false
-var _default_applied: bool = false
 var _human: HumanController = null
+var _paused: bool = false
 var _cell_choices: Array[BattleAction] = []
 
 
 func _ready() -> void:
 	_seed = int(Time.get_unix_time_from_system()) % 100000
-	_battle_path = _arg_after("--battle", BATTLES[0])
-	_human_faction = _arg_after("--human", "")
-	_watch_from_args = OS.get_cmdline_user_args().has("--watch") or _human_faction == "none"
 	_timer.wait_time = step_interval
 	_timer.timeout.connect(_on_step_timer)
 	_runner.state_changed.connect(_on_state_changed)
 	_runner.action_applied.connect(_on_action_applied)
 	_runner.battle_ended.connect(_on_battle_ended)
-	_restart()
+	_menu_button.pressed.connect(_open_menu)
+	_build_battle_buttons()
+
+	_battle_path = _arg_after("--battle", BATTLES[0]["path"])
+	_load_battle(_battle_path)
+	var args := OS.get_cmdline_user_args()
+	if args.has("--watch"):
+		_start("")
+	elif args.has("--human"):
+		_start(_arg_after("--human", ""))
+	else:
+		_open_menu()
 
 
 func _arg_after(flag: String, default: String) -> String:
@@ -62,41 +72,105 @@ func _arg_after(flag: String, default: String) -> String:
 	return default
 
 
-func _restart() -> void:
-	_timer.stop()
-	_clear_action_bar()
-	# A step suspended on the previous game's human decision must unwind
-	# before the battle is replaced, or _stepping stays true forever.
-	_runner.abort()
-	if _human != null and _human.is_waiting():
-		_human.submit(null)
-	_stepping = false
-	var state := BattleLoader.load_file(_battle_path)
+# --- Menu ---
+
+
+func _build_battle_buttons() -> void:
+	for entry: Dictionary in BATTLES:
+		var button := Button.new()
+		button.text = str(entry["label"])
+		button.toggle_mode = true
+		button.pressed.connect(func() -> void: _pick_battle(str(entry["path"])))
+		_battle_buttons.add_child(button)
+
+
+func _open_menu() -> void:
+	_stop_game()
+	_menu.visible = true
+	_menu_button.visible = false
+	_refresh_menu()
+
+
+func _pick_battle(path: String) -> void:
+	_battle_path = path
+	_load_battle(path)
+	_refresh_menu()
+
+
+func _refresh_menu() -> void:
+	for i: int in _battle_buttons.get_child_count():
+		var button: Button = _battle_buttons.get_child(i)
+		button.button_pressed = str(BATTLES[i]["path"]) == _battle_path
+	for child: Node in _mode_buttons.get_children():
+		child.queue_free()
+	if _runner.state == null:
+		return
+	for faction: String in _runner.state.factions:
+		var play := Button.new()
+		play.text = "Play %s" % faction
+		play.pressed.connect(func() -> void: _start(faction))
+		_mode_buttons.add_child(play)
+	var watch := Button.new()
+	watch.text = "Watch AI vs AI"
+	watch.pressed.connect(func() -> void: _start(""))
+	_mode_buttons.add_child(watch)
+
+
+# --- Game lifecycle ---
+
+
+## Load and show a battle without starting it.
+func _load_battle(path: String) -> void:
+	_stop_game()
+	var state := BattleLoader.load_file(path)
 	if state == null:
-		_status.text = "Battle failed to load: %s (see the log)" % _battle_path
+		_status.text = "Battle failed to load: %s (see the log)" % path
 		return
 	_runner.setup(state, {}, _seed)
-	if not _default_applied:
-		_default_applied = true
-		if _human_faction.is_empty() and not _watch_from_args and not state.factions.is_empty():
-			_human_faction = state.factions[0]
-	_human = null
-	if not _human_faction.is_empty() and state.factions.has(_human_faction):
-		_human = HumanController.new()
-		_human.decision_requested.connect(_on_decision_requested)
-		_runner.set_controller(_human_faction, _human)
 	_view.state = state
 	_view.clear_choices()
 	_view.cell_size = _fit_cell_size(state)
 	_view.position = Vector2(48, 56)
+	_status.text = "%s · pick a mode to start" % state.battle_id
+	print(BOOT_MARKER + state.battle_id)
+
+
+## Unwind a step suspended on a human decision and stop the AI timer, so the
+## battle can be replaced or restarted safely.
+func _stop_game() -> void:
+	_timer.stop()
+	_clear_action_bar()
+	_runner.abort()
+	if _human != null and _human.is_waiting():
+		_human.submit(null)
+	_human = null
+	_stepping = false
+
+
+## Start the loaded battle: [param human_faction] on the mouse, "" to watch.
+func _start(human_faction: String) -> void:
+	if _runner.state == null:
+		return
+	_human_faction = human_faction if _runner.state.factions.has(human_faction) else ""
+	_menu.visible = false
+	_menu_button.visible = true
+	_paused = false
+	_stop_game()
+	if not _human_faction.is_empty():
+		_human = HumanController.new()
+		_human.decision_requested.connect(_on_decision_requested)
+		_runner.set_controller(_human_faction, _human)
 	_hint.text = _controls_text()
-	# With a person playing, the AI side always runs on the timer and the
-	# first decision is requested immediately; P only pauses AI-vs-AI games.
-	if autoplay or _human != null:
-		_timer.start()
+	_timer.start()
+	_on_state_changed(_runner.state)
 	if _human != null:
 		_step()
-	print(BOOT_MARKER + state.battle_id)
+
+
+func _restart_same() -> void:
+	_seed += 1
+	_load_battle(_battle_path)
+	_start(_human_faction)
 
 
 func _fit_cell_size(state: BattleState) -> int:
@@ -106,41 +180,29 @@ func _fit_cell_size(state: BattleState) -> int:
 
 
 func _controls_text() -> String:
-	var you := "watching AI vs AI (H to play)" if _human == null else "you are %s (H cycles sides, then watch)" % _human_faction
-	return "Space: step   P: pause AI   R: reseed   N: next battle   %s   Click a ringed unit, then a highlighted cell or enemy" % you
+	var mode := "watching AI vs AI" if _human == null else "you are %s: click a ringed unit, then a highlighted cell or enemy" % _human_faction
+	return "%s   ·   Space: step AI   P: pause AI   R: restart   Esc/M: menu" % mode
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _menu.visible:
+		return
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_handle_click(_view.cell_at_position(_view.get_local_mouse_position()))
 		return
 	if event.is_action_pressed("sim_step"):
 		_step()
 	elif event.is_action_pressed("sim_play"):
-		autoplay = not autoplay
-		if (autoplay or _human != null) and _runner.is_running():
-			_timer.start()
-		else:
+		_paused = not _paused
+		if _paused:
 			_timer.stop()
+		elif _runner.is_running():
+			_timer.start()
+		_hint.text = _controls_text() + ("   (AI paused)" if _paused else "")
 	elif event.is_action_pressed("sim_restart"):
-		_seed += 1
-		_restart()
-	elif event.is_action_pressed("sim_next_battle"):
-		_battle_index = (_battle_index + 1) % BATTLES.size()
-		_battle_path = BATTLES[_battle_index]
-		_default_applied = false
-		_human_faction = ""
-		_restart()
-	elif event.is_action_pressed("sim_toggle_human"):
-		_cycle_human()
-		_restart()
-
-
-func _cycle_human() -> void:
-	var factions := _runner.state.factions if _runner.state != null else []
-	var index := factions.find(_human_faction)
-	index += 1
-	_human_faction = factions[index] if index < factions.size() else ""
+		_restart_same()
+	elif event.is_action_pressed("sim_menu") or event.is_action_pressed("ui_cancel"):
+		_open_menu()
 
 
 # --- Stepping ---
@@ -164,6 +226,8 @@ func _on_action_applied(_action: BattleAction, events: Array[Dictionary]) -> voi
 
 func _on_state_changed(state: BattleState) -> void:
 	_view.refresh()
+	if _menu.visible:
+		return
 	var turn := state.current_turn
 	var turn_text := "%s to act" % turn.faction if turn != null else "between turns"
 	var shares: Array[String] = []
@@ -179,7 +243,8 @@ func _on_battle_ended(outcome: BattleOutcome) -> void:
 	_clear_action_bar()
 	_view.clear_choices()
 	var verdict := "draw" if outcome.is_draw() else "%s wins" % outcome.winner
-	_status.text += "  ·  %s (%s). R restarts, N next battle." % [verdict, outcome.reason]
+	_status.text += "  ·  %s (%s)" % [verdict, outcome.reason]
+	_hint.text = "Battle over.   R: play again   Esc/M: menu"
 
 
 # --- Human play ---

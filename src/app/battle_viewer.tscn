@@ -1,8 +1,20 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://app/battle_viewer.gd" id="1"]
 [ext_resource type="PackedScene" path="res://addons/tactical_battle_kit/view/battle_view.tscn" id="2"]
 [ext_resource type="Script" path="res://addons/tactical_battle_kit/view/battle_runner.gd" id="3"]
+
+[sub_resource type="StyleBoxFlat" id="menu_panel"]
+bg_color = Color(0.11, 0.11, 0.13, 0.97)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.45, 0.45, 0.5, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
 
 [node name="BattleViewer" type="Node2D"]
 script = ExtResource("1")
@@ -24,9 +36,18 @@ wait_time = 0.5
 unique_name_in_owner = true
 offset_left = 16.0
 offset_top = 12.0
-offset_right = 1264.0
+offset_right = 1160.0
 offset_bottom = 40.0
 text = "Loading..."
+
+[node name="MenuButton" type="Button" parent="UI"]
+unique_name_in_owner = true
+visible = false
+offset_left = 1180.0
+offset_top = 10.0
+offset_right = 1264.0
+offset_bottom = 42.0
+text = "Menu"
 
 [node name="ActionBar" type="HBoxContainer" parent="UI"]
 unique_name_in_owner = true
@@ -42,4 +63,61 @@ offset_left = 16.0
 offset_top = 690.0
 offset_right = 1264.0
 offset_bottom = 712.0
-text = "Space: step   P: autoplay   R: reseed   N: next battle   H: play a side"
+text = "Pick a battle and a mode to start."
+
+[node name="StartMenu" type="PanelContainer" parent="UI"]
+unique_name_in_owner = true
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -120.0
+offset_right = 260.0
+offset_bottom = 120.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("menu_panel")
+
+[node name="MarginContainer" type="MarginContainer" parent="UI/StartMenu"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="UI/StartMenu/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="UI/StartMenu/MarginContainer/VBox"]
+layout_mode = 2
+text = "Tactical Battle Kit"
+horizontal_alignment = 1
+
+[node name="BattleLabel" type="Label" parent="UI/StartMenu/MarginContainer/VBox"]
+layout_mode = 2
+text = "Battle"
+
+[node name="BattleButtons" type="HBoxContainer" parent="UI/StartMenu/MarginContainer/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="ModeLabel" type="Label" parent="UI/StartMenu/MarginContainer/VBox"]
+layout_mode = 2
+text = "Mode"
+
+[node name="ModeButtons" type="HBoxContainer" parent="UI/StartMenu/MarginContainer/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="Help" type="Label" parent="UI/StartMenu/MarginContainer/VBox"]
+layout_mode = 2
+text = "Playing: click a ringed unit, then a highlighted cell or enemy. Untargeted actions are buttons."
+horizontal_alignment = 1
+autowrap_mode = 2

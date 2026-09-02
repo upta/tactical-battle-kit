@@ -33,10 +33,11 @@ godot --path src
 godot --path src -- --battle res://examples/frontier/battles/river_crossing.json
 ```
 
-You play the first faction by default; H cycles to the second faction, then
-to watch mode (AI vs AI), then back. `-- --human <faction>` or `-- --watch`
-sets it at launch. Space steps one AI decision, P pauses the AI, R restarts
-with a new seed, N cycles the bundled example battles. Playing: click one of
+The viewer opens on a start menu: pick a battle, then "Play <faction>" or
+"Watch AI vs AI". `-- --battle <path>` plus `-- --human <faction>` or
+`-- --watch` skips the menu. Space steps one AI decision, P pauses the AI, R
+restarts the same setup with a new seed, Escape or M returns to the menu.
+Playing: click one of
 your ringed units, then a highlighted cell (blue: move or act there, yellow:
 area anchor) or a red-ringed enemy; targetless actions (wait, entrench, self
 heals) and End turn are buttons in the bar. The AI plays its side on a timer
