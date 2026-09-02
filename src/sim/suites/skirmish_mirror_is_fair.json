@@ -1,0 +1,16 @@
+{
+  "suite_id": "skirmish_mirror_is_fair",
+  "description": "Same army on both sides with the same AI: the band is wide on purpose: with full-strength counterattacks, moving first means striking into a counter, and the greedy AI pays for it. Below 25% or above 75% is a rule problem, not an AI quirk.",
+  "battle": "res://examples/skirmish/battles/open_field.json",
+  "runs": 120,
+  "seed": 2000,
+  "matchups": [
+    {"id": "greedy_mirror", "ai": {"red": "greedy", "blue": "greedy"}}
+  ],
+  "assertions": [
+    {"metric": "win_rate.red", "comparator": "gte", "expected": 0.25},
+    {"metric": "win_rate.red", "comparator": "lte", "expected": 0.75},
+    {"metric": "draw_rate", "comparator": "lte", "expected": 0.1},
+    {"metric": "mean_rounds", "comparator": "lte", "expected": 30}
+  ]
+}

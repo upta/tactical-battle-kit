@@ -1,0 +1,15 @@
+{
+  "suite_id": "skirmish_aura_sweep",
+  "description": "Sweep the commander aura bonus through a ruleset parameter and watch how fast battles resolve and how often a side loses its commander. A sweep is a question, so the assertions here are loose guard rails; read report.md for the answer.",
+  "battle": "res://examples/skirmish/battles/open_field.json",
+  "runs": 40,
+  "seed": 3000,
+  "matchups": [
+    {"id": "greedy_mirror", "ai": {"red": "greedy", "blue": "greedy"}}
+  ],
+  "sweep": {"path": "ruleset.aura_bonus", "values": [0, 2, 4, 8]},
+  "assertions": [
+    {"metric": "draw_rate", "comparator": "lte", "expected": 0.15},
+    {"metric": "reason.commander_fell", "sweep_value": 8, "comparator": "gte", "expected": 0.5}
+  ]
+}

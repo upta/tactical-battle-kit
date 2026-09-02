@@ -1,0 +1,3 @@
+[submodule "submodules/agentic_godot_validation"]
+	path = submodules/agentic_godot_validation
+	url = https://github.com/upta/agentic-godot-validation.git

@@ -1,0 +1,36 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://app/battle_viewer.gd" id="1"]
+[ext_resource type="PackedScene" path="res://addons/tactical_battle_kit/view/battle_view.tscn" id="2"]
+[ext_resource type="Script" path="res://addons/tactical_battle_kit/view/battle_runner.gd" id="3"]
+
+[node name="BattleViewer" type="Node2D"]
+script = ExtResource("1")
+
+[node name="BattleView" parent="." instance=ExtResource("2")]
+unique_name_in_owner = true
+
+[node name="BattleRunner" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("3")
+
+[node name="StepTimer" type="Timer" parent="."]
+unique_name_in_owner = true
+wait_time = 0.25
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="Status" type="Label" parent="UI"]
+unique_name_in_owner = true
+offset_left = 16.0
+offset_top = 12.0
+offset_right = 1264.0
+offset_bottom = 40.0
+text = "Loading..."
+
+[node name="Help" type="Label" parent="UI"]
+offset_left = 16.0
+offset_top = 690.0
+offset_right = 1264.0
+offset_bottom = 712.0
+text = "Space: step one decision   P: toggle autoplay   R: restart with a new seed   N: next example battle   (or launch with -- --battle res://path.json)"

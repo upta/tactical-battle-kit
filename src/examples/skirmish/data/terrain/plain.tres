@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TerrainDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/tactical_battle_kit/core/terrain_def.gd" id="1_terraindef"]
+
+[resource]
+script = ExtResource("1_terraindef")
+id = "plain"
+display_name = "Plain"
+move_cost = 1
+defense_bonus = 0.0
+passable = true
+glyph = "."
+color = Color(0.62, 0.72, 0.42, 1)
+tags = Array[String]([])

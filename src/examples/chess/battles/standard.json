@@ -1,0 +1,65 @@
+{
+  "battle_id": "chess_standard",
+  "ruleset": "res://examples/chess/chess_ruleset.gd",
+  "topology": "square",
+  "terrain_legend": {
+    ".": {"id": "light", "glyph": ".", "color": "#e8d9b5"},
+    "#": {"id": "dark", "glyph": "#", "color": "#8d6b48"}
+  },
+  "map": [
+    ".#.#.#.#",
+    "#.#.#.#.",
+    ".#.#.#.#",
+    "#.#.#.#.",
+    ".#.#.#.#",
+    "#.#.#.#.",
+    ".#.#.#.#",
+    "#.#.#.#."
+  ],
+  "unit_defs": {
+    "pawn":   {"id": "pawn",   "max_hp": 1, "attack": 0, "defense": 0, "move": 0, "range_min": 0, "range_max": 0, "tags": ["pawn"]},
+    "knight": {"id": "knight", "max_hp": 1, "attack": 0, "defense": 0, "move": 0, "range_min": 0, "range_max": 0, "tags": ["knight"]},
+    "bishop": {"id": "bishop", "max_hp": 1, "attack": 0, "defense": 0, "move": 0, "range_min": 0, "range_max": 0, "tags": ["bishop"]},
+    "rook":   {"id": "rook",   "max_hp": 1, "attack": 0, "defense": 0, "move": 0, "range_min": 0, "range_max": 0, "tags": ["rook"]},
+    "queen":  {"id": "queen",  "max_hp": 1, "attack": 0, "defense": 0, "move": 0, "range_min": 0, "range_max": 0, "tags": ["queen"]},
+    "king":   {"id": "king",   "max_hp": 1, "attack": 0, "defense": 0, "move": 0, "range_min": 0, "range_max": 0, "tags": ["king"]}
+  },
+  "factions": [
+    {"id": "white", "ai": "capture_first"},
+    {"id": "black", "ai": "random"}
+  ],
+  "units": [
+    {"id": "bR1", "faction": "black", "def": "rook",   "cell": [0, 0]},
+    {"id": "bN1", "faction": "black", "def": "knight", "cell": [1, 0]},
+    {"id": "bB1", "faction": "black", "def": "bishop", "cell": [2, 0]},
+    {"id": "bQ",  "faction": "black", "def": "queen",  "cell": [3, 0]},
+    {"id": "bK",  "faction": "black", "def": "king",   "cell": [4, 0]},
+    {"id": "bB2", "faction": "black", "def": "bishop", "cell": [5, 0]},
+    {"id": "bN2", "faction": "black", "def": "knight", "cell": [6, 0]},
+    {"id": "bR2", "faction": "black", "def": "rook",   "cell": [7, 0]},
+    {"id": "bP1", "faction": "black", "def": "pawn", "cell": [0, 1]},
+    {"id": "bP2", "faction": "black", "def": "pawn", "cell": [1, 1]},
+    {"id": "bP3", "faction": "black", "def": "pawn", "cell": [2, 1]},
+    {"id": "bP4", "faction": "black", "def": "pawn", "cell": [3, 1]},
+    {"id": "bP5", "faction": "black", "def": "pawn", "cell": [4, 1]},
+    {"id": "bP6", "faction": "black", "def": "pawn", "cell": [5, 1]},
+    {"id": "bP7", "faction": "black", "def": "pawn", "cell": [6, 1]},
+    {"id": "bP8", "faction": "black", "def": "pawn", "cell": [7, 1]},
+    {"id": "wP1", "faction": "white", "def": "pawn", "cell": [0, 6]},
+    {"id": "wP2", "faction": "white", "def": "pawn", "cell": [1, 6]},
+    {"id": "wP3", "faction": "white", "def": "pawn", "cell": [2, 6]},
+    {"id": "wP4", "faction": "white", "def": "pawn", "cell": [3, 6]},
+    {"id": "wP5", "faction": "white", "def": "pawn", "cell": [4, 6]},
+    {"id": "wP6", "faction": "white", "def": "pawn", "cell": [5, 6]},
+    {"id": "wP7", "faction": "white", "def": "pawn", "cell": [6, 6]},
+    {"id": "wP8", "faction": "white", "def": "pawn", "cell": [7, 6]},
+    {"id": "wR1", "faction": "white", "def": "rook",   "cell": [0, 7]},
+    {"id": "wN1", "faction": "white", "def": "knight", "cell": [1, 7]},
+    {"id": "wB1", "faction": "white", "def": "bishop", "cell": [2, 7]},
+    {"id": "wQ",  "faction": "white", "def": "queen",  "cell": [3, 7]},
+    {"id": "wK",  "faction": "white", "def": "king",   "cell": [4, 7]},
+    {"id": "wB2", "faction": "white", "def": "bishop", "cell": [5, 7]},
+    {"id": "wN2", "faction": "white", "def": "knight", "cell": [6, 7]},
+    {"id": "wR2", "faction": "white", "def": "rook",   "cell": [7, 7]}
+  ]
+}

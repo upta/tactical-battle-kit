@@ -1,0 +1,119 @@
+name: CI
+
+# Compile, style, and the headless balance suites on PRs and pushes to main.
+# The in-engine scenario suite is NOT run here: scenario runs need a windowed
+# engine, so it stays local (./validate.ps1) and is the Definition of Done's
+# other gate. The sim suites need no window, which is why they can be the
+# floor.
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    name: Scripts compile
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.7.1
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Recreate symlinks
+        run: bash setup.sh
+
+      - name: Import assets
+        run: godot --headless --import --path src > /tmp/import.log 2>&1 || (cat /tmp/import.log && exit 1)
+
+      - name: Load every script and scene (headless runtime pass)
+        # Mirrors src/tools/check_scripts.ps1: three gates, because silence
+        # used to read as success. Each gate records into $fail rather than
+        # exiting, since `!` and `||` are exempt from `set -e`.
+        run: |
+          set +e
+          godot --headless --path src --script res://tools/compile_check.gd > /tmp/compile.log 2>&1
+          status=$?
+          set -e
+          cat /tmp/compile.log
+
+          fail=0
+          grep -q '^COMPILE CHECK COMPLETE: [1-9]' /tmp/compile.log ||
+            { echo "No completion marker, or the walk reached no scripts."; fail=1; }
+          if grep -hE '^(USER |SCRIPT )?ERROR:|^COMPILE FAIL:' /tmp/compile.log; then fail=1; fi
+          [ "$status" -eq 0 ] || { echo "Compile pass exited $status."; fail=1; }
+          exit $fail
+
+  simulate:
+    name: Balance suites
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.7.1
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Recreate symlinks
+        run: bash setup.sh
+
+      - name: Import assets
+        run: godot --headless --import --path src > /tmp/import.log 2>&1 || (cat /tmp/import.log && exit 1)
+
+      - name: Run every suite
+        # Mirrors simulate.ps1: the RESULT line is the verdict; a missing
+        # RESULT line or an ERROR line in the log fails the suite.
+        run: |
+          fail=0
+          for suite in src/sim/suites/*.json; do
+            name=$(basename "$suite" .json)
+            echo "=== $name"
+            godot --headless --path src --script res://addons/tactical_battle_kit/sim/sim_cli.gd -- --suite "res://sim/suites/$name.json" > "/tmp/sim_$name.log" 2>&1
+            grep -E '^(RESULT|ARTIFACTS|FAILED) ' "/tmp/sim_$name.log" || true
+            if grep -qE '^(USER |SCRIPT )?ERROR:' "/tmp/sim_$name.log"; then
+              grep -E '^(USER |SCRIPT )?ERROR:' "/tmp/sim_$name.log" | head -5
+              fail=1
+            fi
+            code=$(grep -E '^RESULT ' "/tmp/sim_$name.log" | tail -1 | sed -E 's/.*"exit_code":([0-9]+).*/\1/')
+            if [ -z "$code" ] || [ "$code" != "0" ]; then fail=1; fi
+          done
+          exit $fail
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sim-reports
+          path: src/artifacts/sim/**/report.md
+          if-no-files-found: ignore
+
+  lint:
+    name: Format + lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install gdtoolkit
+        # 4.5.0+ required: earlier releases cannot parse @abstract.
+        run: pip install "gdtoolkit==4.*"
+
+      - name: gdformat + gdlint
+        # Repo-owned scripts: the kit addon, app, examples, validation, tools.
+        # The validation addon symlink is a submodule and not ours to style.
+        run: |
+          git ls-files -- src | grep '\.gd$' | grep -v '^src/addons/agentic_godot_validation/' > /tmp/gd_files.txt
+          xargs -a /tmp/gd_files.txt gdformat --check
+          xargs -a /tmp/gd_files.txt gdlint

@@ -1,0 +1,27 @@
+{
+  "battle_id": "duel",
+  "ruleset": "res://examples/skirmish/skirmish_ruleset.gd",
+  "topology": "square",
+  "terrain_legend": {
+    ".": "res://examples/skirmish/data/terrain/plain.tres",
+    "f": "res://examples/skirmish/data/terrain/forest.tres"
+  },
+  "map": [
+    ".....",
+    ".....",
+    ".....",
+    "...f.",
+    "....."
+  ],
+  "unit_defs": {
+    "spearman": "res://examples/skirmish/data/unit_defs/spearman.tres"
+  },
+  "factions": [
+    {"id": "red", "ai": "greedy"},
+    {"id": "blue", "ai": "greedy"}
+  ],
+  "units": [
+    {"id": "r1", "faction": "red", "def": "spearman", "cell": [1, 2], "facing": 0},
+    {"id": "b1", "faction": "blue", "def": "spearman", "cell": [2, 2], "facing": 2}
+  ]
+}

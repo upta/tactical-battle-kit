@@ -1,0 +1,18 @@
+# Submodule symlink configuration
+# Format: target_path=source_path
+# Paths are relative to project root
+# Run setup.ps1 (Windows) or setup.sh (Linux/macOS) to create these
+
+# Validation addon (into the Godot project)
+src/addons/agentic_godot_validation=submodules/agentic_godot_validation/addons/agentic_godot_validation
+
+# Validation runner tools
+tools=submodules/agentic_godot_validation/tools
+
+# Claude Code skills (from validation kit)
+.claude/skills/author-validation-scenario=submodules/agentic_godot_validation/.github/skills/author-validation-scenario
+.claude/skills/debug-validation-failure=submodules/agentic_godot_validation/.github/skills/debug-validation-failure
+
+# Claude Code skills (this kit's own, exported for consumers under .github/skills)
+.claude/skills/author-battle-ruleset=.github/skills/author-battle-ruleset
+.claude/skills/run-balance-sim=.github/skills/run-balance-sim

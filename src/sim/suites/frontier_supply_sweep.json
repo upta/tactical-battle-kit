@@ -1,0 +1,16 @@
+{
+  "suite_id": "frontier_supply_sweep",
+  "description": "How much does starving matter? Sweep the starving damage multiplier: at 1.0 supply is cosmetic, lower values should shift wins toward the side that brought more food (the colonials). Also proves the hex ruleset with a per-unit scheduler, powder, entrenching and routing runs clean.",
+  "battle": "res://examples/frontier/battles/river_crossing.json",
+  "runs": 30,
+  "seed": 5000,
+  "matchups": [
+    {"id": "frontier_mirror", "ai": {"colonial": "frontier", "regular": "frontier"}}
+  ],
+  "sweep": {"path": "ruleset.starving_damage_multiplier", "values": [1.0, 0.7, 0.4]},
+  "assertions": [
+    {"metric": "metrics.events.rejected", "comparator": "eq", "expected": 0},
+    {"metric": "draw_rate", "comparator": "lte", "expected": 0.5},
+    {"metric": "custom.starving_rounds.regular", "comparator": "gt", "expected": 0}
+  ]
+}

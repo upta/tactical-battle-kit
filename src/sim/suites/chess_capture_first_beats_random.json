@@ -1,0 +1,17 @@
+{
+  "suite_id": "chess_capture_first_beats_random",
+  "description": "Chess smoke: a ruleset with no hp, no damage and one action per turn runs clean under the engine, never rejects an AI move, and a capture-greedy player ends with more material than random play.",
+  "battle": "res://examples/chess/battles/standard.json",
+  "runs": 6,
+  "seed": 4000,
+  "overrides": {"ruleset": {}},
+  "matchups": [
+    {"id": "capture_first_vs_random", "ai": {"white": "capture_first", "black": "random"}}
+  ],
+  "assertions": [
+    {"metric": "metrics.events.rejected", "comparator": "eq", "expected": 0},
+    {"metric": "mean_decisions", "comparator": "gte", "expected": 20},
+    {"metric": "custom.material.white", "comparator": "gt", "expected": 0},
+    {"metric": "win_rate.black", "comparator": "lte", "expected": 0.2}
+  ]
+}

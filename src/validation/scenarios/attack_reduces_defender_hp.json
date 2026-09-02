@@ -1,0 +1,53 @@
+{
+  "scenario_id": "attack_reduces_defender_hp",
+  "version": 4,
+  "description": "Two spearmen start adjacent. One decision by the greedy AI must be an attack that lowers the defender's hp and, with full-strength counters on, the attacker's too. The view must draw both units before and after.",
+  "harness_scene": "res://validation/harnesses/battle_view_harness.tscn",
+  "done_contract": {
+    "step_action": "sim_step",
+    "spearman_max_hp": 12,
+    "units_expected": 2,
+    "decision_frame_budget": 120
+  },
+  "artifact_contract": {
+    "required_files": [
+      "summary.json",
+      "event_log.json",
+      "scene_tree.json",
+      "console.log",
+      "screenshots/before.png",
+      "screenshots/after_attack.png"
+    ],
+    "missing_file_is_failure": true
+  },
+  "exit_codes": {
+    "pass": 0,
+    "assertion_failure": 1,
+    "runtime_error": 2,
+    "timeout": 3,
+    "artifact_generation_error": 4
+  },
+  "cli_contract": {
+    "command_template": "godot --path <project> -- --test-mode --scenario <path> --artifacts <dir>"
+  },
+  "steps": [
+    {"op": "load_harness", "scene": "res://validation/harnesses/battle_view_harness.tscn"},
+    {"op": "wait_frames", "frames": 5},
+    {"op": "checkpoint", "name": "before"},
+    {"op": "assert_value", "checkpoint": "before", "path": "harness_state.load_error", "comparator": "eq", "expected": ""},
+    {"op": "assert_value", "checkpoint": "before", "path": "harness_state.units.b1.hp", "comparator": "eq", "expected": 12},
+    {"op": "assert_value", "checkpoint": "before", "path": "harness_state.view.units_drawn", "comparator": "eq", "expected": 2},
+    {"op": "press_action", "action": "sim_step"},
+    {"op": "wait_frames", "frames": 2},
+    {"op": "release_action", "action": "sim_step"},
+    {"op": "wait_until", "path": "harness_state.units.b1.hp", "comparator": "lt", "expected": 12, "timeout_frames": 120},
+    {"op": "wait_frames", "frames": 3},
+    {"op": "checkpoint", "name": "after_attack"},
+    {"op": "assert_value", "checkpoint": "after_attack", "path": "harness_state.step_count", "comparator": "eq", "expected": 1},
+    {"op": "assert_value", "checkpoint": "after_attack", "path": "harness_state.units.r1.hp", "comparator": "lt", "expected": 12},
+    {"op": "assert_value", "checkpoint": "after_attack", "path": "harness_state.units.b1.status", "comparator": "eq", "expected": "active"},
+    {"op": "assert_value", "checkpoint": "after_attack", "path": "harness_state.view.units_drawn", "comparator": "eq", "expected": 2},
+    {"op": "assert_value", "checkpoint": "after_attack", "path": "harness_state.ended", "comparator": "eq", "expected": false},
+    {"op": "quit"}
+  ]
+}

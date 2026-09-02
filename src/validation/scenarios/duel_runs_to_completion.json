@@ -1,0 +1,49 @@
+{
+  "scenario_id": "duel_runs_to_completion",
+  "version": 4,
+  "description": "Playing the duel to the end through the runner produces a decided battle with one side eliminated, and the view stops drawing the dead unit.",
+  "harness_scene": "res://validation/harnesses/battle_view_harness.tscn",
+  "done_contract": {
+    "play_action": "sim_play",
+    "completion_frame_budget": 600,
+    "survivors_expected": 1
+  },
+  "artifact_contract": {
+    "required_files": [
+      "summary.json",
+      "event_log.json",
+      "scene_tree.json",
+      "console.log",
+      "screenshots/start.png",
+      "screenshots/finished.png"
+    ],
+    "missing_file_is_failure": true
+  },
+  "exit_codes": {
+    "pass": 0,
+    "assertion_failure": 1,
+    "runtime_error": 2,
+    "timeout": 3,
+    "artifact_generation_error": 4
+  },
+  "cli_contract": {
+    "command_template": "godot --path <project> -- --test-mode --scenario <path> --artifacts <dir>"
+  },
+  "steps": [
+    {"op": "load_harness", "scene": "res://validation/harnesses/battle_view_harness.tscn"},
+    {"op": "wait_frames", "frames": 5},
+    {"op": "checkpoint", "name": "start"},
+    {"op": "assert_value", "checkpoint": "start", "path": "harness_state.ended", "comparator": "eq", "expected": false},
+    {"op": "press_action", "action": "sim_play"},
+    {"op": "wait_frames", "frames": 2},
+    {"op": "release_action", "action": "sim_play"},
+    {"op": "wait_until", "path": "harness_state.ended", "comparator": "eq", "expected": true, "timeout_frames": 600},
+    {"op": "wait_frames", "frames": 3},
+    {"op": "checkpoint", "name": "finished"},
+    {"op": "assert_value", "checkpoint": "finished", "path": "harness_state.winner", "comparator": "neq", "expected": ""},
+    {"op": "assert_value", "checkpoint": "finished", "path": "harness_state.end_reason", "comparator": "eq", "expected": "elimination"},
+    {"op": "assert_value", "checkpoint": "finished", "path": "harness_state.view.units_drawn", "comparator": "eq", "expected": 1},
+    {"op": "assert_value", "checkpoint": "finished", "path": "harness_state.step_count", "comparator": "gt", "expected": 1},
+    {"op": "quit"}
+  ]
+}

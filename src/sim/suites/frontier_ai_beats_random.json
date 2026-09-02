@@ -1,0 +1,20 @@
+{
+  "suite_id": "frontier_ai_beats_random",
+  "description": "The frontier AI must beat random play as the well-supplied defender, and as the starving attacker it must at least never lose to it: crossing the river on five rounds of food mostly runs out the clock, which is the map's statement, not the AI's. Routing and capture must actually occur in play.",
+  "battle": "res://examples/frontier/battles/river_crossing.json",
+  "runs": 30,
+  "seed": 6000,
+  "matchups": [
+    {"id": "frontier_vs_random", "ai": {"colonial": "frontier", "regular": "random"}},
+    {"id": "random_vs_frontier", "ai": {"colonial": "random", "regular": "frontier"}}
+  ],
+  "assertions": [
+    {"metric": "win_rate.colonial", "matchup": "frontier_vs_random", "comparator": "gte", "expected": 0.8},
+    {"metric": "draw_rate", "matchup": "frontier_vs_random", "comparator": "lte", "expected": 0.1},
+    {"metric": "win_rate.regular", "matchup": "random_vs_frontier", "comparator": "gte", "expected": 0.15},
+    {"metric": "win_rate.colonial", "matchup": "random_vs_frontier", "comparator": "lte", "expected": 0.2},
+    {"metric": "custom.starving_rounds.regular", "matchup": "random_vs_frontier", "comparator": "gt", "expected": 5},
+    {"metric": "metrics.events.left_field", "comparator": "gt", "expected": 0},
+    {"metric": "metrics.events.rejected", "comparator": "eq", "expected": 0}
+  ]
+}

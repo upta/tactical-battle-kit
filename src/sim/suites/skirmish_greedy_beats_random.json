@@ -1,0 +1,17 @@
+{
+  "suite_id": "skirmish_greedy_beats_random",
+  "description": "Sanity floor for the example AI: greedy must beat random decisively on the open field, and battles must actually finish.",
+  "battle": "res://examples/skirmish/battles/open_field.json",
+  "runs": 60,
+  "seed": 1000,
+  "matchups": [
+    {"id": "greedy_vs_random", "ai": {"red": "greedy", "blue": "random"}},
+    {"id": "random_vs_greedy", "ai": {"red": "random", "blue": "greedy"}}
+  ],
+  "assertions": [
+    {"metric": "win_rate.red", "matchup": "greedy_vs_random", "comparator": "gte", "expected": 0.75},
+    {"metric": "win_rate.blue", "matchup": "random_vs_greedy", "comparator": "gte", "expected": 0.75},
+    {"metric": "draw_rate", "comparator": "lte", "expected": 0.05},
+    {"metric": "reason.max_rounds", "comparator": "lte", "expected": 0.05}
+  ]
+}

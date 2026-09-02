@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="UnitDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/tactical_battle_kit/core/unit_def.gd" id="1_unitdef"]
+
+[resource]
+script = ExtResource("1_unitdef")
+id = "commander"
+display_name = "Commander"
+max_hp = 18
+attack = 6
+defense = 3
+move = 3
+range_min = 1
+range_max = 1
+tags = Array[String](["commander", "infantry"])
+footprint = Array[Vector2i]([Vector2i(0, 0)])
+layer = ""

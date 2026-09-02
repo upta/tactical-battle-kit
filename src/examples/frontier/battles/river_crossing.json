@@ -1,0 +1,46 @@
+{
+  "battle_id": "river_crossing",
+  "ruleset": "res://examples/frontier/frontier_ruleset.gd",
+  "topology": "hex",
+  "terrain_legend": {
+    ".": {"id": "field", "glyph": ".", "move_cost": 1, "color": "#a9b96a"},
+    "f": {"id": "forest", "glyph": "f", "move_cost": 2, "defense_bonus": 0.4, "color": "#3d6b3a", "tags": ["forest"]},
+    "^": {"id": "ridge", "glyph": "^", "move_cost": 2, "defense_bonus": 0.3, "color": "#9a8b64", "tags": ["hill"]},
+    "~": {"id": "river", "glyph": "~", "passable": false, "color": "#4d7fb3", "tags": ["river"]},
+    "=": {"id": "ford", "glyph": "=", "move_cost": 2, "defense_bonus": -0.3, "color": "#7fa3c4", "tags": ["ford"]}
+  },
+  "map": [
+    "....ff.~....^",
+    "..f....~..^^.",
+    ".......=.....",
+    "....^..~.....",
+    "...^^..~..ff.",
+    ".......=...f.",
+    "..f....~.....",
+    "..ff...~....."
+  ],
+  "unit_defs": {
+    "line":    {"id": "line",    "display_name": "Line infantry", "max_hp": 12, "attack": 5, "defense": 2, "move": 2, "range_min": 1, "range_max": 2, "tags": ["infantry", "ranged"]},
+    "militia": {"id": "militia", "display_name": "Militia",       "max_hp": 9,  "attack": 4, "defense": 1, "move": 2, "range_min": 1, "range_max": 2, "tags": ["infantry", "ranged"]},
+    "dragoon": {"id": "dragoon", "display_name": "Dragoons",      "max_hp": 11, "attack": 6, "defense": 1, "move": 4, "range_min": 1, "range_max": 1, "tags": ["cavalry"]},
+    "cannon":  {"id": "cannon",  "display_name": "Field gun",     "max_hp": 8,  "attack": 8, "defense": 0, "move": 1, "range_min": 2, "range_max": 4, "tags": ["artillery", "ranged"]}
+  },
+  "factions": [
+    {"id": "colonial", "ai": "frontier"},
+    {"id": "regular", "ai": "frontier"}
+  ],
+  "custom": {"supply": {"colonial": 14, "regular": 5}},
+  "units": [
+    {"id": "c_line1", "faction": "colonial", "def": "line",    "cell": [2, 2], "facing": 0},
+    {"id": "c_line2", "faction": "colonial", "def": "line",    "cell": [2, 4], "facing": 0},
+    {"id": "c_mil1",  "faction": "colonial", "def": "militia", "cell": [1, 3], "facing": 0},
+    {"id": "c_mil2",  "faction": "colonial", "def": "militia", "cell": [1, 5], "facing": 0},
+    {"id": "c_drag",  "faction": "colonial", "def": "dragoon", "cell": [3, 6], "facing": 0},
+    {"id": "c_gun",   "faction": "colonial", "def": "cannon",  "cell": [1, 1], "facing": 0},
+    {"id": "r_line1", "faction": "regular",  "def": "line",    "cell": [10, 2], "facing": 3},
+    {"id": "r_line2", "faction": "regular",  "def": "line",    "cell": [10, 4], "facing": 3},
+    {"id": "r_line3", "faction": "regular",  "def": "line",    "cell": [11, 3], "facing": 3},
+    {"id": "r_drag",  "faction": "regular",  "def": "dragoon", "cell": [10, 6], "facing": 3},
+    {"id": "r_gun",   "faction": "regular",  "def": "cannon",  "cell": [12, 4], "facing": 3}
+  ]
+}
