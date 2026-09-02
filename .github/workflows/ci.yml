@@ -1,6 +1,6 @@
 name: CI
 
-# Compile, style, and the headless balance suites on PRs and pushes to main.
+# Compile and the headless balance suites on PRs and pushes to main.
 # The in-engine scenario suite is NOT run here: scenario runs need a windowed
 # engine, so it stays local (./validate.ps1) and is the Definition of Done's
 # other gate. The sim suites need no window, which is why they can be the
@@ -94,26 +94,3 @@ jobs:
           path: src/artifacts/sim/**/report.md
           if-no-files-found: ignore
 
-  lint:
-    name: Format + lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install gdtoolkit
-        # 4.5.0+ required: earlier releases cannot parse @abstract.
-        run: pip install "gdtoolkit==4.*"
-
-      - name: gdformat + gdlint
-        # Repo-owned scripts: the kit addon, app, examples, validation, tools.
-        # The validation addon symlink is a submodule and not ours to style.
-        run: |
-          git ls-files -- src | grep '\.gd$' | grep -v '^src/addons/agentic_godot_validation/' > /tmp/gd_files.txt
-          xargs -a /tmp/gd_files.txt gdformat --check
-          xargs -a /tmp/gd_files.txt gdlint

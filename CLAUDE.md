@@ -64,8 +64,8 @@ Stated once, here. Every command references it; none restate it.
    the six-point rubric is in the validate-gameplay skill.
 4. **Viewer boots clean**: run-game skill; the `[Kit] Battle ready:` marker
    appears and the runtime log has zero ERROR lines.
-5. **Scripts compile and scenes load**: `src/tools/check_scripts.ps1`. Style
-   is not gated locally; `src/tools/lint.ps1` exists, CI runs gdformat/gdlint.
+5. **Scripts compile and scenes load**: `src/tools/check_scripts.ps1`. There is
+   no style gate: gdformat/gdlint were dropped (D12); agents write the code.
 6. **`.uid` sidecars committed**: run the import before committing; no
    unstaged `.uid` files left behind.
 7. **Conventional commit in value language**, and `git push origin` at the end

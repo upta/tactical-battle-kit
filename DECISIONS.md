@@ -60,6 +60,11 @@ Godot mono builds can die during teardown after every artifact is written;
 `simulate.ps1` trusts the printed verdict and falls back to the exit code
 only when no verdict was printed.
 
+**D12: No style gate; gdformat and gdlint are not run anywhere.**
+The code is agent-written and the compile gate plus the two proof gates are
+what matter. gdtoolkit drifted between releases, nothing local can run it,
+and a check nobody can reproduce is noise.
+
 ## Closed
 
 (none yet)

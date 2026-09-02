@@ -20,11 +20,11 @@ this file has a bug: fix it or delete it.
 | `src/sim/suites/` | Balance suites, one claim each; `./simulate.ps1` runs them all. |
 | `src/validation/` | The scenario suite: `scenarios/*.json`, `harnesses/*.tscn`, `scripts/harness_controllers/`, `fixtures/*.json` (tiny battles). |
 | `src/addons/agentic_godot_validation/` | Validation kit runtime, a symlink into the submodule. |
-| `src/tools/` | Repo-owned checks: `check_scripts.ps1` (compile gate, engine half in `compile_check.gd`), `lint.ps1`. |
+| `src/tools/` | Repo-owned checks: `check_scripts.ps1` (compile gate, engine half in `compile_check.gd`). |
 | `src/artifacts/` | Generated: `sim/<suite>/<stamp>/`, `<scenario>/<stamp>/`, `suites/`. Gitignored. |
 | `docs/` | Reference for consumers: core model, ruleset seams, suite schema, battle file, install. |
 | `.claude/` | Skills, commands, reviewer agents (code, test, balance), two Stop hooks (verification freshness, doc budgets). CLAUDE.md is the contract. |
-| `.github/` | CI (compile, lint, sim suites), consumer-facing skills, Copilot pointer. |
+| `.github/` | CI (compile, sim suites), consumer-facing skills, Copilot pointer. |
 | repo root | `simulate.ps1` and `validate.ps1` (the two gates), `setup.ps1`/`setup.sh` + `symlink-config.txt` (kit intake), `validation.config.psd1`, `tools/` → validation kit runners (symlink). |
 
 ## Seams
