@@ -122,3 +122,6 @@ Named so nobody copies them as patterns:
 - `ChessMoveRule.leaves_king_safe` moves a piece and restores it inside
   `enumerate`. Contained, but not a pattern: prefer `state.clone()` for
   lookahead anywhere the cost is acceptable.
+- `BattleLoader` instantiates and frees a PackedScene when a battle names a
+  `map_scene`, which is the one place below `view/` that touches nodes. It
+  reads tile data only and never enters the tree; keep it that way.

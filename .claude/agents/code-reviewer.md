@@ -33,6 +33,11 @@ The repo's opinions, so you don't file them as findings:
   finding; subclass the def.
 - **Examples are examples.** A smarter example AI is not a finding; an example
   that edits the addon to work IS.
+- **Presentations derive, never decide.** A view reads state and events and
+  routes clicks through `ActionTargets` and `HumanController`; a view that
+  computes a rule (a hit chance, a cover level) instead of asking the ruleset
+  IS a finding. A painted map is read through `TileMapGridSource`, never
+  regenerated from data (D14).
 
 Output: findings graded Critical / Important / Suggestion, each with
 `file:line` and a one-line why. If you are unsure whether something is a

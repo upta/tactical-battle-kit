@@ -1,4 +1,33 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(./simulate.ps1:*)",
+      "Bash(./validate.ps1:*)",
+      "Bash(./setup.ps1:*)",
+      "Bash(pwsh tools/run_scenario.ps1:*)",
+      "Bash(pwsh tools/run_all_scenarios.ps1:*)",
+      "Bash(src/tools/check_scripts.ps1:*)",
+      "Bash(powershell src/tools/export_web.ps1:*)",
+      "Bash(powershell src/tools/serve_web.ps1:*)",
+      "Bash(godot:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push origin:*)",
+      "Bash(git switch:*)",
+      "Bash(git merge --ff-only:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh run watch:*)",
+      "PowerShell(./simulate.ps1:*)",
+      "PowerShell(./validate.ps1:*)",
+      "PowerShell(./src/tools/check_scripts.ps1:*)",
+      "PowerShell(powershell -NoProfile -ExecutionPolicy Bypass -File src/tools/export_web.ps1:*)",
+      "PowerShell(pwsh -NoProfile -File tools/run_scenario.ps1:*)"
+    ]
+  },
   "hooks": {
     "Stop": [
       {

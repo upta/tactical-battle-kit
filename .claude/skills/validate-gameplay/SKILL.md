@@ -76,6 +76,13 @@ in `src/validation/fixtures/`. A controller exposes `get_observed_state()
   async (`await runner.step()`) uses `wait_until` polling instead.
 - A flaky scenario is a design smell: make it deterministic (pin the seed in
   the harness), never delete or loosen it to go green.
+- **`eq` on arrays never matches.** JSON numbers arrive as floats, so
+  `[1, 2]` from a Vector2i never equals `[1.0, 2.0]`. Expose cells as
+  `"x,y"` strings (or scalars) in `get_observed_state()`.
+- **Record the first event, not the last.** The AI answers within its
+  timer tick, so a harness field like `last_attack` gets overwritten before
+  the checkpoint; capture the first occurrence when that is what the
+  scenario asserts.
 
 ## Exit codes
 

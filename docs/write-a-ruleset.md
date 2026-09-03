@@ -108,6 +108,16 @@ overrides (`hp`, `facing`, `layer`, `status`, `custom`) from the battle file.
 tunables as plain vars and read them there. `summarize(state)` returns
 numbers for the report. `ai_scripts()` names the game's AIs.
 
+## Reactions
+
+Overwatch, opportunity attacks, anything that fires on the other side's
+turn: the reaction is its own `ActionRule` with `slot()` returning "" and
+`can_use` gating on the stance, and the hook fires it with
+`engine.apply_reaction(state, action)`, which validates against that rule's
+`enumerate` and skips the turn check (D15). `engine.interrupt_move` then
+stops the mover mid-path. Roll from `engine.rng`. The breach example's
+`ReactionShotRule` and its `on_event` are the reference.
+
 ## An AI
 
 ```gdscript

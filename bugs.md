@@ -10,6 +10,11 @@ fixed bug with no proof is a coverage gap, not tidying.
 
 ## Closed
 
+- **B-4** The breach overlay's `ringed` is `Array[String]`; `_submit` assigned
+  an untyped `[]`, which throws at runtime, and the throw aborted the
+  submit so a human move never reached the controller. Caught by
+  `breach_tilemap_matches_grid` on its first run. Guard: that scenario
+  asserts the trooper's cell changes after a submit.
 - **B-1** Both the sim CLI and scenario runs exited with `-1073741819`
   (access violation) after every artifact was written and every assertion
   passed. Cause: `AiRegistry` held lambdas in a `static var`; the closures

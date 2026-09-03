@@ -71,6 +71,18 @@ and a check nobody can reproduce is noise.
 mechanism as the jam games; main is included because there is no itch.io
 release and the main build is the thing to show people.
 
+**D14: A painted map is the source of truth; the kit reads TileMapLayers, never writes them.**
+`TileMapGridSource` builds the grid from tile custom data, headless. A tool
+script bootstrapped the first breach map from ASCII once; after that the
+`.tscn` is edited in the editor and nothing regenerates it.
+
+**D15: Reactions bypass the activation economy.**
+`engine.apply_reaction` validates against the rule's own `enumerate` and
+skips the turn-membership and slot checks; a reaction rule declares slot ""
+and gates itself with `can_use` (overwatch stance). *Why:* the watcher has
+already spent its turn, and a reaction that had to be "legal for the active
+turn" could never fire.
+
 ## Closed
 
 (none yet)

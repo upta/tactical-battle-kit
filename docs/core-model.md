@@ -34,7 +34,9 @@ that changes it is a `BattleEngine`, and everything that happened is in
   round), `is_turn_over`, `end_turn`, `end_round` (draws at `max_rounds`).
   `BattleSimulator.run` and `BattleRunner.step` compose them identically.
 - Transitions for rules and hooks: `emit`, `kill`, `remove_from_field`,
-  `spawn`, `interrupt_move`, `end_battle`, `poll_outcome`.
+  `spawn`, `interrupt_move`, `end_battle`, `poll_outcome`, and
+  `apply_reaction` for an action by a unit outside the turn. `engine.rng` is
+  the stream hooks roll from.
 
 ## Events
 
