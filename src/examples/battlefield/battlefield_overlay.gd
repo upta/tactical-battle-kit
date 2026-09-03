@@ -128,6 +128,16 @@ func _draw() -> void:
 		draw_arc(center, radius, 0.0, TAU, 32, Color(0, 0, 0, 0.6), 1.0)
 		var count := BattlefieldRuleset.count_of(unit)
 		_label(font, str(count), center + Vector2(0.0, -7.0), 11, Color.WHITE)
+		# Heroes-style: how much the NEXT creature to die has left, not the
+		# whole pool. Full again after every death.
+		var stack := unit.def as StackDef
+		if stack != null and count > 0:
+			var top_hp := unit.hp - (count - 1) * stack.creature_hp
+			var fraction := clampf(float(top_hp) / float(maxi(stack.creature_hp, 1)), 0.0, 1.0)
+			var bar := Vector2(24.0, 3.0)
+			var bar_origin := center + Vector2(-bar.x * 0.5, -radius - 6.0)
+			draw_rect(Rect2(bar_origin, bar), Color(0.1, 0.1, 0.1, 0.9))
+			draw_rect(Rect2(bar_origin, Vector2(bar.x * fraction, bar.y)), Color(0.9, 0.3, 0.2).lerp(Color(0.3, 0.9, 0.3), fraction))
 		var stance := ""
 		if bool(unit.custom.get("defending", false)):
 			stance = "DEF"

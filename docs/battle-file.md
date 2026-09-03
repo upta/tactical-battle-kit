@@ -33,7 +33,7 @@ every override root is applied here, so suites and tests share one path.
 | --- | --- |
 | `battle_id` | Name in reports and the viewer's boot marker |
 | `ruleset` | Script path of the `BattleRuleset` subclass; instantiated per load |
-| `topology` | `square`, `square8`, `euclid`, `hex`; omitted means `ruleset.topology()` |
+| `topology` | `square`, `square8`, `euclid`, `hex` (odd-r rows, pointy-top), `hex_columns` (odd-q columns, flat-top); omitted means `ruleset.topology()` |
 | `terrain_legend` | Glyph to a `.tres` path, a `.json` path, or an inline dict |
 | `map` | Rows of glyphs; ragged rows pad with an error |
 | `map_scene`, `ground_layer`, `overlay_layers`, `data_layers`, `terrain_key` | Painted map instead of rows: the scene's TileMapLayers are read through `TileMapGridSource`; `terrain_legend` is then keyed by terrain id |

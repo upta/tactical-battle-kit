@@ -113,5 +113,7 @@ static func from_id(topology_id: String) -> GridTopology:
 			return SquareTopology.new(true, true)
 		"hex":
 			return HexTopology.new()
+		"hex_columns":
+			return HexTopology.new(true)
 	push_error("Unknown grid topology id: %s" % topology_id)
 	return null

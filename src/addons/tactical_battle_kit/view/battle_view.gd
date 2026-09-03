@@ -55,6 +55,11 @@ func cell_center(cell: Vector2i) -> Vector2:
 	if state != null and state.grid.topology is HexTopology:
 		var w := float(cell_size)
 		var h := w * 1.1547
+		if (state.grid.topology as HexTopology).columns:
+			# Flat-top: columns step 3/4 of a hex width, odd columns drop half a cell.
+			var cx := cell.x * h * 0.75 + h * 0.5
+			var cy := cell.y * w + (w * 0.5 if (cell.x & 1) == 1 else 0.0) + w * 0.5
+			return Vector2(cx, cy)
 		var x := cell.x * w + (w * 0.5 if (cell.y & 1) == 1 else 0.0) + w * 0.5
 		var y := cell.y * h * 0.75 + h * 0.5
 		return Vector2(x, y)
@@ -73,6 +78,9 @@ func cell_at_position(local: Vector2) -> Vector2i:
 	var h := w * 1.1547
 	var row := floori(local.y / (h * 0.75))
 	var col := floori((local.x - (w * 0.5 if (row & 1) == 1 else 0.0)) / w)
+	if (state.grid.topology as HexTopology).columns:
+		col = floori(local.x / (h * 0.75))
+		row = floori((local.y - (w * 0.5 if (col & 1) == 1 else 0.0)) / w)
 	var best := Vector2i(-1, -1)
 	var best_distance := INF
 	for dy: int in range(-1, 2):
@@ -338,8 +346,9 @@ func _draw_cell(cell: Vector2i, color: Color, hex: bool, alpha: float = 1.0) -> 
 		var center := cell_center(cell)
 		var radius := float(cell_size) * 0.5774
 		var points := PackedVector2Array()
+		var flat_top := (state.grid.topology as HexTopology).columns
 		for i: int in 6:
-			var angle := PI / 6.0 + float(i) * PI / 3.0
+			var angle := (0.0 if flat_top else PI / 6.0) + float(i) * PI / 3.0
 			points.append(center + Vector2(cos(angle), sin(angle)) * radius)
 		draw_colored_polygon(points, fill)
 		points.append(points[0])

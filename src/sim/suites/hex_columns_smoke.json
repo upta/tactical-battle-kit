@@ -1,0 +1,17 @@
+{
+  "suite_id": "hex_columns_smoke",
+  "description": "The frontier battle re-run on the odd-q columns layout (flat-top hexes, Godot's vertical offset axis) through a battle override: the same ASCII map, different adjacency. Units move and fight, nothing is rejected, and the AI still beats random play, which proves the second hex layout end to end without a second map.",
+  "battle": "res://examples/frontier/battles/river_crossing.json",
+  "runs": 20,
+  "seed": 9000,
+  "overrides": {"battle": {"topology": "hex_columns"}},
+  "matchups": [
+    {"id": "frontier_vs_random_columns", "ai": {"colonial": "frontier", "regular": "random"}}
+  ],
+  "assertions": [
+    {"metric": "metrics.events.rejected", "comparator": "eq", "expected": 0},
+    {"metric": "metrics.events.moved", "comparator": "gt", "expected": 10},
+    {"metric": "metrics.events.attacked", "comparator": "gt", "expected": 5},
+    {"metric": "win_rate.colonial", "comparator": "gte", "expected": 0.7}
+  ]
+}

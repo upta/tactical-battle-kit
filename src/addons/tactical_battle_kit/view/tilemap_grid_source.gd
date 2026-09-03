@@ -13,9 +13,10 @@ extends RefCounted
 ## The grid's (0, 0) is the ground layer's used-rect origin; origin() gives
 ## the offset a scene adds to turn a grid cell back into a TileMapLayer cell.
 ##
-## Half-offset-square and hexagon tile shapes (horizontal offset axis,
-## stacked layout) use the same odd-r cell coordinates as HexTopology, so a
-## hex battle needs no conversion either: the battlefield example is one.
+## Half-offset-square and hexagon tile shapes use the same cell coordinates
+## as HexTopology: horizontal offset axis + stacked layout is "hex" (odd-r),
+## vertical offset axis + stacked is "hex_columns" (odd-q). No conversion:
+## the battlefield example is a rows layout.
 
 
 static func origin(ground: TileMapLayer) -> Vector2i:
