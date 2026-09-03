@@ -36,6 +36,7 @@ every override root is applied here, so suites and tests share one path.
 | `topology` | `square`, `square8`, `euclid`, `hex`; omitted means `ruleset.topology()` |
 | `terrain_legend` | Glyph to a `.tres` path, a `.json` path, or an inline dict |
 | `map` | Rows of glyphs; ragged rows pad with an error |
+| `map_scene`, `ground_layer`, `overlay_layers`, `data_layers`, `terrain_key` | Painted map instead of rows: the scene's TileMapLayers are read through `TileMapGridSource`; `terrain_legend` is then keyed by terrain id |
 | `cell_layers` | Named per-cell layers as rows; digits become ints, anything else a string |
 | `overlays` | Terrain stacked on specific cells |
 | `unit_defs` | Named defs; a unit's `def` may be one of these names, a path, or an inline dict |

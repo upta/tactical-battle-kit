@@ -64,6 +64,7 @@ the `R2_PUBLIC_BASE` variable makes the summary link clickable. Locally,
 | --- | --- |
 | `examples/skirmish` | Square grid, faction turns, commander aura, troops dissolve when the commander falls, heal aura (an `AreaRule`), full-strength counters, facing, cavalry barred from forest, a sweep over a ruleset tunable |
 | `examples/chess` | One action per turn, per-piece move enumeration, check and checkmate as the outcome, no hp and no damage model at all |
+| `examples/breach` | XCOM-flavored, on a painted TileMapLayer map that is the source of truth: action points and dashes, directional cover from tile tags, hit rolls and misses, destructible cover, overwatch as a reaction fired from a hook, reinforcements spawning on flagged tiles, and its own presentation instead of the debug view |
 | `examples/frontier` | Hex grid, per-unit initiative scheduler, gunpowder, entrenching, routing and capture, army supply that starves the attacker, a sweep with a visible knee |
 
 Each is a ruleset, a few rules, an AI, a battle file and a suite under
@@ -83,4 +84,5 @@ skills under `.github/skills/` walk through it; `docs/` has the reference.
 - `docs/write-a-sim-suite.md`: suite schema, metrics, sweeps
 - `docs/battle-file.md`: battle JSON reference
 - `docs/install-into-a-game.md`: consuming the addon
+- `docs/presentation.md`: what a game's own view implements (TileMapLayer maps included)
 - `ARCHITECTURE.md`: where things live; `CLAUDE.md`: how work happens here

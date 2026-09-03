@@ -34,6 +34,7 @@ func setup(battle_state: BattleState, ai_ids: Dictionary[String, String] = {}, s
 	engine = BattleEngine.new(state.ruleset)
 	var rng := BattleRng.new(seed_value)
 	_engine_rng = rng.fork("engine")
+	engine.rng = _engine_rng
 	controllers.clear()
 	_ai_rngs.clear()
 	for faction: String in state.factions:

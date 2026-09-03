@@ -1,0 +1,64 @@
+{
+  "scenario_id": "breach_tilemap_matches_grid",
+  "version": 4,
+  "description": "The breach battle builds its grid from the painted TileMapLayers: walls, rubble, full cover and the spawn flag land where the map has them. Starting the game with the squad on a HumanController suspends the runner; submitting a move through the demo's own presentation applies it and the trooper moves.",
+  "harness_scene": "res://validation/harnesses/breach_harness.tscn",
+  "done_contract": {
+    "map_size": [18, 10],
+    "wait_frame_budget": 180
+  },
+  "artifact_contract": {
+    "required_files": [
+      "summary.json",
+      "event_log.json",
+      "scene_tree.json",
+      "console.log",
+      "screenshots/loaded.png",
+      "screenshots/waiting.png",
+      "screenshots/moved.png"
+    ],
+    "missing_file_is_failure": true
+  },
+  "exit_codes": {
+    "pass": 0,
+    "assertion_failure": 1,
+    "runtime_error": 2,
+    "timeout": 3,
+    "artifact_generation_error": 4
+  },
+  "cli_contract": {
+    "command_template": "godot --path <project> -- --test-mode --scenario <path> --artifacts <dir>"
+  },
+  "steps": [
+    {"op": "load_harness", "scene": "res://validation/harnesses/breach_harness.tscn"},
+    {"op": "wait_frames", "frames": 5},
+    {"op": "checkpoint", "name": "loaded"},
+    {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.load_error", "comparator": "eq", "expected": ""},
+    {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.grid_width", "comparator": "eq", "expected": 18},
+    {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.grid_height", "comparator": "eq", "expected": 10},
+    {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.terrain.0_0", "comparator": "eq", "expected": "wall"},
+    {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.terrain.1_1", "comparator": "eq", "expected": "floor"},
+    {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.terrain.9_3", "comparator": "eq", "expected": "rubble"},
+    {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.terrain.5_3", "comparator": "eq", "expected": "full_cover"},
+    {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.overlay_count.5_3", "comparator": "eq", "expected": 1},
+    {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.overlay_count.1_1", "comparator": "eq", "expected": 0},
+    {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.spawn_13_2", "comparator": "eq", "expected": true},
+    {"op": "press_action", "action": "sim_step"},
+    {"op": "wait_frames", "frames": 2},
+    {"op": "release_action", "action": "sim_step"},
+    {"op": "wait_until", "path": "harness_state.human_waiting", "comparator": "eq", "expected": true, "timeout_frames": 180},
+    {"op": "wait_frames", "frames": 3},
+    {"op": "checkpoint", "name": "waiting"},
+    {"op": "assert_value", "checkpoint": "waiting", "path": "harness_state.pending_count", "comparator": "gt", "expected": 0},
+    {"op": "assert_value", "checkpoint": "waiting", "path": "harness_state.units.s_trooper1.cell", "comparator": "eq", "expected": "1,2"},
+    {"op": "press_action", "action": "sim_submit"},
+    {"op": "wait_frames", "frames": 2},
+    {"op": "release_action", "action": "sim_submit"},
+    {"op": "wait_until", "path": "harness_state.submitted", "comparator": "eq", "expected": 1, "timeout_frames": 60},
+    {"op": "wait_frames", "frames": 5},
+    {"op": "checkpoint", "name": "moved"},
+    {"op": "assert_value", "checkpoint": "moved", "path": "harness_state.units.s_trooper1.cell", "comparator": "neq", "expected": "1,2"},
+    {"op": "assert_value", "checkpoint": "moved", "path": "harness_state.units.s_trooper1.status", "comparator": "eq", "expected": "active"},
+    {"op": "quit"}
+  ]
+}

@@ -15,6 +15,10 @@ extends RefCounted
 var ruleset: BattleRuleset
 var rules: Array[ActionRule] = []
 var damage_model: DamageModel
+## The battle's engine-side random stream. Set by whoever drives the loop
+## (simulator, runner); apply() falls back to it when handed no rng, and
+## hooks roll from it for reactions.
+var rng: BattleRng = BattleRng.new(0)
 ## Safety cap so a broken AI or ruleset cannot spin a turn forever.
 var max_actions_per_turn: int = 200
 ## Consecutive rejections before the engine ends the turn on the AI's behalf.
@@ -82,40 +86,55 @@ func legal_actions_for_unit(state: BattleState, unit: BattleUnit) -> Array[Battl
 # --- Apply ---
 
 
-## Validate and apply one action. Returns the events it produced (also
-## appended to state.events). An illegal action produces one "rejected" event
-## and changes nothing else.
-func apply(state: BattleState, action: BattleAction, rng: BattleRng) -> Array[Dictionary]:
+## Validate and apply one action by the active turn's actor. Returns the
+## events it produced (also appended to state.events). An illegal action
+## produces one "rejected" event and changes nothing else.
+func apply(state: BattleState, action: BattleAction, action_rng: BattleRng = null) -> Array[Dictionary]:
+	return _apply(state, action, action_rng, false)
+
+
+## Apply an action by a unit OUTSIDE the current turn: overwatch, opportunity
+## attacks, any reaction a hook fires. Legality is still checked against the
+## actor's own legal actions and slots are spent the same way; the action is
+## not recorded on the turn. Re-entrant from on_event.
+func apply_reaction(state: BattleState, action: BattleAction, action_rng: BattleRng = null) -> Array[Dictionary]:
+	return _apply(state, action, action_rng, true)
+
+
+func _apply(state: BattleState, action: BattleAction, action_rng: BattleRng, reaction: bool) -> Array[Dictionary]:
 	var first_event := state.events.size()
-	var rejection := _rejection_reason(state, action)
+	var rejection := _rejection_reason(state, action, reaction)
 	if rejection != "":
-		_consecutive_rejections += 1
+		if not reaction:
+			_consecutive_rejections += 1
 		emit(state, {
 			"type": BattleEvents.REJECTED,
 			"unit_id": action.unit_id if action != null else "",
 			"action": action.to_dict() if action != null else {},
 			"reason": rejection,
+			"reaction": reaction,
 		})
 		return _events_since(state, first_event)
 
-	_consecutive_rejections = 0
+	if not reaction:
+		_consecutive_rejections = 0
 	var unit := state.unit(action.unit_id)
 	var action_rule := rule(action.kind)
-	action_rule.apply(state, self, action, rng)
+	action_rule.apply(state, self, action, action_rng if action_rng != null else rng)
 
 	for slot: String in action_rule.spends(state, unit, action):
 		unit.spend(slot)
 	if action_rule.ends_activation():
 		for slot: String in ruleset.activation_slots():
 			unit.spend(slot)
-	if state.current_turn != null:
+	if not reaction and state.current_turn != null:
 		state.current_turn.actions.append(action)
 
 	poll_outcome(state)
 	return _events_since(state, first_event)
 
 
-func _rejection_reason(state: BattleState, action: BattleAction) -> String:
+func _rejection_reason(state: BattleState, action: BattleAction, reaction: bool) -> String:
 	if action == null:
 		return "no_action"
 	if state.ended:
@@ -125,11 +144,15 @@ func _rejection_reason(state: BattleState, action: BattleAction) -> String:
 		return "unknown_unit"
 	if not unit.is_on_field():
 		return "unit_off_field"
-	if state.current_turn != null and not state.current_turn.includes(unit.id):
+	if not reaction and state.current_turn != null and not state.current_turn.includes(unit.id):
 		return "not_in_turn"
-	if rule(action.kind) == null:
+	var action_rule := rule(action.kind)
+	if action_rule == null:
 		return "unknown_kind"
-	for legal: BattleAction in legal_actions_for_unit(state, unit):
+	# A reaction sits outside the activation economy: it is legal if its rule
+	# enumerates it, whatever the actor's slots say.
+	var candidates := action_rule.enumerate(state, unit) if reaction and action_rule.can_use(state, unit) else legal_actions_for_unit(state, unit)
+	for legal: BattleAction in candidates:
 		if legal.equals(action):
 			return ""
 	return "illegal"

@@ -12,6 +12,10 @@ extends RefCounted
 ##   overlays [{cell, terrain}], unit_defs {key: path | dict},
 ##   factions [{id, ai} | id], units [{id, faction, def, cell, hp?, facing?,
 ##   layer?, status?, custom?}], custom {}
+## Painted map instead of rows: map_scene (tscn path), ground_layer (node
+## name, default "Ground"), overlay_layers [names], data_layers [custom data
+## fields that become grid layers], terrain_key (default "terrain"); then
+## terrain_legend is keyed by terrain id.
 
 
 static func load_file(path: String, overrides: Dictionary = {}) -> BattleState:
@@ -69,11 +73,24 @@ static func build_with_ruleset(data: Dictionary, ruleset: BattleRuleset, overrid
 		var terrain := _resolve_terrain(legend_data[glyph], ruleset, terrain_overrides)
 		if terrain != null:
 			legend[glyph] = terrain
-	var rows: Array = data.get("map", [])
-	if rows.is_empty():
-		push_error("Battle '%s' has no map rows." % state.battle_id)
-		return null
-	state.grid = BattleGrid.from_ascii(rows, legend, topology)
+	if data.has("map_scene"):
+		# Painted map: the TileMapLayers are the source of truth and the
+		# legend is keyed by terrain id rather than glyph.
+		var overlay_names: Array[String] = []
+		overlay_names.assign(data.get("overlay_layers", []))
+		var data_layers: Array[String] = []
+		data_layers.assign(data.get("data_layers", []))
+		state.grid = TileMapGridSource.from_scene(
+			str(data["map_scene"]), str(data.get("ground_layer", "Ground")), overlay_names,
+			legend, topology, data_layers, str(data.get("terrain_key", "terrain")))
+		if state.grid == null:
+			return null
+	else:
+		var rows: Array = data.get("map", [])
+		if rows.is_empty():
+			push_error("Battle '%s' has no map rows." % state.battle_id)
+			return null
+		state.grid = BattleGrid.from_ascii(rows, legend, topology)
 
 	var cell_layers: Dictionary = data.get("cell_layers", {})
 	for layer_name: String in cell_layers.keys():

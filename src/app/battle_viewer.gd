@@ -18,6 +18,7 @@ const BATTLES: Array[Dictionary] = [
 	{"label": "Skirmish (square)", "path": "res://examples/skirmish/battles/open_field.json"},
 	{"label": "Frontier (hex)", "path": "res://examples/frontier/battles/river_crossing.json"},
 	{"label": "Chess", "path": "res://examples/chess/battles/standard.json"},
+	{"label": "Breach (TileMap)", "path": "res://examples/breach/battles/warehouse.json", "scene": "res://examples/breach/breach.tscn"},
 ]
 const BOOT_MARKER := "[Kit] Battle ready: "
 
@@ -33,6 +34,7 @@ const BOOT_MARKER := "[Kit] Battle ready: "
 @onready var _battle_buttons: HBoxContainer = %BattleButtons
 @onready var _mode_buttons: HBoxContainer = %ModeButtons
 @onready var _menu_button: Button = %MenuButton
+@onready var _custom_holder: Node2D = %Custom
 
 var _battle_path: String = ""
 var _human_faction: String = ""
@@ -41,6 +43,11 @@ var _stepping: bool = false
 var _human: HumanController = null
 var _paused: bool = false
 var _cell_choices: Array[BattleAction] = []
+# An example that owns its presentation (breach): instantiated from the
+# BATTLES entry's "scene" and driven through load_battle / factions / start /
+# stop / step / set_paused / restart instead of BattleView and the runner.
+var _custom: Node2D = null
+var _custom_scene_path: String = ""
 
 
 func _ready() -> void:
@@ -103,9 +110,8 @@ func _refresh_menu() -> void:
 		button.button_pressed = str(BATTLES[i]["path"]) == _battle_path
 	for child: Node in _mode_buttons.get_children():
 		child.queue_free()
-	if _runner.state == null:
-		return
-	for faction: String in _runner.state.factions:
+	var names: Array[String] = _custom.factions() if _custom != null else (_runner.state.factions if _runner.state != null else [])
+	for faction: String in names:
 		var play := Button.new()
 		play.text = "Play %s" % faction
 		play.pressed.connect(func() -> void: _start(faction))
@@ -122,6 +128,25 @@ func _refresh_menu() -> void:
 ## Load and show a battle without starting it.
 func _load_battle(path: String) -> void:
 	_stop_game()
+	var scene_path := _scene_for(path)
+	if scene_path != _custom_scene_path:
+		if _custom != null:
+			_custom.queue_free()
+			_custom = null
+		_custom_scene_path = scene_path
+		if not scene_path.is_empty():
+			var packed: PackedScene = load(scene_path)
+			_custom = packed.instantiate()
+			_custom_holder.add_child(_custom)
+	var custom_active := _custom != null
+	_view.visible = not custom_active
+	_status.visible = not custom_active
+	_hint.visible = not custom_active
+	_action_bar.visible = not custom_active
+	if custom_active:
+		if _custom.load_battle(path):
+			print(BOOT_MARKER + str(_custom.battle_id))
+		return
 	var state := BattleLoader.load_file(path)
 	if state == null:
 		_status.text = "Battle failed to load: %s (see the log)" % path
@@ -138,6 +163,8 @@ func _load_battle(path: String) -> void:
 ## Unwind a step suspended on a human decision and stop the AI timer, so the
 ## battle can be replaced or restarted safely.
 func _stop_game() -> void:
+	if _custom != null:
+		_custom.stop()
 	_timer.stop()
 	_clear_action_bar()
 	_runner.abort()
@@ -149,6 +176,13 @@ func _stop_game() -> void:
 
 ## Start the loaded battle: [param human_faction] on the mouse, "" to watch.
 func _start(human_faction: String) -> void:
+	if _custom != null:
+		_human_faction = human_faction
+		_menu.visible = false
+		_menu_button.visible = true
+		_paused = false
+		_custom.start(human_faction, _seed)
+		return
 	if _runner.state == null:
 		return
 	_human_faction = human_faction if _runner.state.factions.has(human_faction) else ""
@@ -169,6 +203,9 @@ func _start(human_faction: String) -> void:
 
 func _restart_same() -> void:
 	_seed += 1
+	if _custom != null:
+		_custom.restart()
+		return
 	_load_battle(_battle_path)
 	_start(_human_faction)
 
@@ -191,10 +228,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		_handle_click(_view.cell_at_position(_view.get_local_mouse_position()))
 		return
 	if event.is_action_pressed("sim_step"):
-		_step()
+		if _custom != null:
+			_custom.step()
+		else:
+			_step()
 	elif event.is_action_pressed("sim_play"):
 		_paused = not _paused
-		if _paused:
+		if _custom != null:
+			_custom.set_paused(_paused)
+		elif _paused:
 			_timer.stop()
 		elif _runner.is_running():
 			_timer.start()
@@ -266,10 +308,7 @@ func _handle_click(cell: Vector2i) -> void:
 	var selected := _view.selected_unit_id()
 
 	if not selected.is_empty():
-		var matches: Array[BattleAction] = []
-		for action: BattleAction in _view.choices_for(selected):
-			if _view.target_cell_of(action) == cell:
-				matches.append(action)
+		var matches := ActionTargets.matches_at(state, _view.choices(), selected, cell)
 		if matches.size() == 1:
 			_submit(matches[0])
 			return
@@ -302,11 +341,7 @@ func _rebuild_action_bar() -> void:
 		for action: BattleAction in _cell_choices:
 			_add_button(_describe(state, action), action)
 	elif not selected.is_empty():
-		var seen: Dictionary[String, bool] = {}
-		for action: BattleAction in _view.choices_for(selected):
-			if _view.target_cell_of(action).x >= 0 or seen.has(action.kind):
-				continue
-			seen[action.kind] = true
+		for action: BattleAction in ActionTargets.untargeted(state, _view.choices(), selected):
 			_add_button(action.kind.capitalize(), action)
 	var end_turn := Button.new()
 	end_turn.text = "End turn"
@@ -329,3 +364,10 @@ func _add_button(text: String, action: BattleAction) -> void:
 func _clear_action_bar() -> void:
 	for child: Node in _action_bar.get_children():
 		child.queue_free()
+
+
+func _scene_for(path: String) -> String:
+	for entry: Dictionary in BATTLES:
+		if str(entry["path"]) == path:
+			return str(entry.get("scene", ""))
+	return ""

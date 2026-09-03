@@ -114,28 +114,17 @@ func selected_unit_id() -> String:
 	return _selected_id
 
 
+func choices() -> Array[BattleAction]:
+	return _choices.duplicate()
+
+
 func choices_for(unit_id: String) -> Array[BattleAction]:
-	var result: Array[BattleAction] = []
-	for action: BattleAction in _choices:
-		if action.unit_id == unit_id:
-			result.append(action)
-	return result
+	return ActionTargets.for_unit(_choices, unit_id)
 
 
 ## Cell an action targets on the board, or (-1, -1) for a self action.
 func target_cell_of(action: BattleAction) -> Vector2i:
-	if action.params.has("target_unit_id"):
-		var target := state.unit(action.target_unit_id())
-		if target != null:
-			return target.cell
-	if action.params.has("target_cell"):
-		return action.target_cell()
-	if action.params.has("anchor"):
-		var actor := state.unit(action.unit_id)
-		var anchor: Vector2i = action.params["anchor"]
-		if actor == null or anchor != actor.cell:
-			return anchor
-	return Vector2i(-1, -1)
+	return ActionTargets.target_cell_of(state, action)
 
 
 # --- Effects ---

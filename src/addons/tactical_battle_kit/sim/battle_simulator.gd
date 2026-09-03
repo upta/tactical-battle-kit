@@ -14,6 +14,7 @@ var trace: bool = false
 func run(state: BattleState, ais: Dictionary[String, AiController], rng: BattleRng) -> Dictionary:
 	var engine := BattleEngine.new(state.ruleset)
 	var engine_rng := rng.fork("engine")
+	engine.rng = engine_rng
 	var ai_rngs: Dictionary[String, BattleRng] = {}
 	for faction: String in state.factions:
 		ai_rngs[faction] = rng.fork("ai:" + faction)

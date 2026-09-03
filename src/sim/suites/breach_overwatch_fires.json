@@ -1,0 +1,19 @@
+{
+  "suite_id": "breach_overwatch_fires",
+  "description": "The TileMap-backed breach ruleset runs headless on the painted map: overwatch reaction shots fire from a hook through apply_reaction, reinforcements spawn on the flagged tiles, cover breaks, nothing is rejected, and the breach AI beats random play from the squad side.",
+  "battle": "res://examples/breach/battles/warehouse.json",
+  "runs": 30,
+  "seed": 7000,
+  "matchups": [
+    {"id": "breach_mirror", "ai": {"squad": "breach", "aliens": "breach"}},
+    {"id": "breach_vs_random", "ai": {"squad": "breach", "aliens": "random"}}
+  ],
+  "assertions": [
+    {"metric": "metrics.events.rejected", "comparator": "eq", "expected": 0},
+    {"metric": "custom.reaction_shots", "matchup": "breach_mirror", "comparator": "gt", "expected": 0.5},
+    {"metric": "metrics.events.unit_spawned", "matchup": "breach_mirror", "comparator": "gte", "expected": 1.0},
+    {"metric": "custom.hit_rate", "matchup": "breach_mirror", "comparator": "lt", "expected": 0.9},
+    {"metric": "custom.hit_rate", "matchup": "breach_mirror", "comparator": "gt", "expected": 0.2},
+    {"metric": "win_rate.squad", "matchup": "breach_vs_random", "comparator": "gte", "expected": 0.7}
+  ]
+}

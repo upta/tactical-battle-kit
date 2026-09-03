@@ -9,13 +9,14 @@ this file has a bug: fix it or delete it.
 | Path | What lives here |
 | --- | --- |
 | `src/addons/tactical_battle_kit/core/` | The node-free model. `battle_state.gd` (grid, units, factions, turn, custom, events; `clone()`), `battle_engine.gd` (the only mutator: legal actions, apply, loop primitives, kill/remove/spawn/interrupt), `battle_grid.gd` (named layers of flat arrays plus an overlay stack per cell), `grid_topology.gd` + `square_topology.gd` + `hex_topology.gd` (adjacency, distance, directions, offsets, lines, shapes), `area_pattern.gd`, `pathfinder.gd` (reachability through the ruleset's movement cost, footprint-aware), `battle_unit.gd`, `battle_action.gd`, `battle_turn.gd`, `battle_outcome.gd`, `battle_events.gd` (event names and shapes), `battle_rng.gd` (seeded, forkable), `unit_def.gd` / `terrain_def.gd` (resources) and `def_overrides.gd` (property-based patching). |
-| `src/addons/tactical_battle_kit/strategy/` | What a game implements. `battle_ruleset.gd` is the bundle (actions, models, scheduler, outcome, hooks, factories, configure, summarize, ai_scripts). `action_rule.gd` (abstract), `move_rule.gd` (default, step-wise, interruptible), `attack_rule.gd` and `area_rule.gd` (templates), `wait_rule.gd`. `damage_model.gd` (abstract) and `linear_damage_model.gd`. `ai_controller.gd` (abstract), `random_ai.gd` (the only shipped AI), `ai_registry.gd` (scripts by id). |
+| `src/addons/tactical_battle_kit/strategy/` | What a game implements. `battle_ruleset.gd` is the bundle (actions, models, scheduler, outcome, hooks, factories, configure, summarize, ai_scripts). `action_rule.gd` (abstract), `move_rule.gd` (default, step-wise, interruptible), `attack_rule.gd` and `area_rule.gd` (templates), `wait_rule.gd`. `damage_model.gd` (abstract) and `linear_damage_model.gd`. `ai_controller.gd` (abstract), `random_ai.gd` (the only shipped AI), `ai_registry.gd` (scripts by id), `action_targets.gd` (click semantics from action params, shared by every presentation). |
 | `src/addons/tactical_battle_kit/sim/` | Headless: `battle_simulator.gd` (one battle, folds metrics from events), `sim_suite.gd` (matchups × sweep × runs, aggregation, assertions), `sim_report.gd` (report.json, report.md, latest pointers), `sim_cli.gd` (the `--script` entry point). |
 | `src/addons/tactical_battle_kit/loaders/` | `battle_loader.gd`: battle JSON to BattleState through the ruleset's factories; every override root; `deep_merge`, `set_dotted_path`. |
-| `src/addons/tactical_battle_kit/view/` | The only node layer. `battle_view.gd` is a debug renderer (shapes, hp bars, facing ticks; hex and square); `battle_runner.gd` steps a battle in a scene, awaiting `choose_async` for humans; `human_controller.gd` is that human: emits `decision_requested` with the legal actions and suspends until `submit()`. |
+| `src/addons/tactical_battle_kit/view/` | The only node layer. `battle_view.gd` is a debug renderer (shapes, hp bars, facing ticks; hex and square); `battle_runner.gd` steps a battle in a scene, awaiting `choose_async` for humans; `human_controller.gd` is that human: emits `decision_requested` with the legal actions and suspends until `submit()`; `tilemap_grid_source.gd` builds a grid from painted TileMapLayers (tile data only, headless-safe). |
 | `src/app/` | The dev shell: `root.tscn` routes to the validation bootstrap under `--test-mode`, else to `battle_viewer.tscn`, and registers the InputMap actions; the viewer plays any battle file (`-- --battle`) with its declared AIs, from a start menu (pick a battle, play a faction or watch AI vs AI; `-- --human <faction>` or `-- --watch` skips it) with click mapping generic over action params, and prints the `[Kit] Battle ready:` marker. |
 | `src/examples/skirmish/` | Warsong-flavored square skirmish: `skirmish_ruleset.gd`, `rules/` (aura damage model, commander attack rule, heal aura), `ai/greedy_ai.gd`, `data/` (.tres defs), `battles/open_field.json`. |
 | `src/examples/chess/` | Chess: `chess_ruleset.gd` (one action per turn, checkmate outcome), `chess_move_rule.gd` (all movement, king safety by ray casting), `ai/capture_first_ai.gd`, `battles/standard.json` (inline defs). |
+| `src/examples/breach/` | XCOM-flavored breach on a painted TileMap: `breach_ruleset.gd` (action points, cover from tile tags, overwatch reactions through `apply_reaction`, reinforcements through `spawn`), `rules/`, `ai/`, `map/` (generated tileset and TileMapLayer scene; `tools/build_map.gd` bootstrapped them once), `breach.tscn` + `breach_scene.gd` + `breach_overlay.gd` (its own presentation: TileMapLayers, highlight layer, overlay drawing). |
 | `src/examples/frontier/` | Hex musket war: `frontier_ruleset.gd` (per-unit initiative, supply, entrench clearing), `rules/` (musket attack with powder and routing, entrench, damage model), `ai/frontier_ai.gd`, `battles/river_crossing.json`. |
 | `src/sim/suites/` | Balance suites, one claim each; `./simulate.ps1` runs them all. |
 | `src/validation/` | The scenario suite: `scenarios/*.json`, `harnesses/*.tscn`, `scripts/harness_controllers/`, `fixtures/*.json` (tiny battles). |
@@ -67,7 +68,14 @@ these and nothing else:
 - **Decisions.** `AiController.choose(state, engine, turn, rng)` at faction
   level; `BattleRunner` awaits `choose_async` when a controller has it, and
   `HumanController` is the shipped one: a UI listens to `decision_requested`
-  and calls `submit()`.
+  and calls `submit()`. Click semantics come from `ActionTargets`.
+- **Reactions.** A hook may fire an action by a unit outside the turn with
+  `engine.apply_reaction`, validated against that rule's own enumerate;
+  `engine.rng` is the stream hooks roll from. `interrupt_move` stops a move
+  mid-path.
+- **Presentation.** Five things a view implements (docs/presentation.md):
+  cell mapping, the map, units from state, effects from events, a human
+  deciding through `HumanController` and `ActionTargets`.
 
 ## Golden path
 

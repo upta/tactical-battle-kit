@@ -25,8 +25,9 @@ silent architecture), not a workaround.
 | Allies, guests, neutrals | `are_enemies(a, b)` |
 | Facing and flank damage | `uses_facing()` true; read `unit.facing` and `topology.arc` in the damage model |
 | Routing, capture, dormant, revive | `engine.remove_from_field(state, unit, status)`; `unit.status`; `engine.spawn()` |
-| Reactions (overwatch, opportunity attacks) | `on_event` hook calling `engine.apply` and `engine.interrupt_move` |
-| Fences, fire, cover, fog | Grid overlays (`add_overlay`/`remove_overlay` with tags) |
+| Fences, fire, cover, fog | Grid overlays (`add_overlay`/`remove_overlay` with tags); on a painted map, an overlay TileMapLayer |
+| Reactions (overwatch, opportunity attacks) | `on_event` hook calling `engine.apply_reaction` and `engine.interrupt_move`; the reaction is its own ActionRule with slot "" |
+| A painted map | `map_scene` in the battle file; `terrain` custom data on tiles; see docs/presentation.md |
 | Height, regions, deployment zones | Grid layers; `cell_layers` in the battle file |
 | Per-unit runtime numbers (mp, powder, entrenched, CT) | `unit.custom` |
 | Per-battle runtime numbers (supply, decks, weather, phase) | `state.custom` |
