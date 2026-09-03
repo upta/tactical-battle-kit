@@ -10,10 +10,16 @@ scenarios are this repo's own proof.
 git submodule add https://github.com/upta/tactical-battle-kit.git submodules/tactical_battle_kit
 ```
 
-Then symlink `<project>/addons/tactical_battle_kit` to
-`submodules/tactical_battle_kit/src/addons/tactical_battle_kit` (the sibling
-repos do this with a `symlink-config.txt` and `setup.ps1`/`setup.sh`; copy
-those if the project has none). Kit improvements then flow by moving the
+Then link `<project>/addons/tactical_battle_kit` to
+`submodules/tactical_battle_kit/src/addons/tactical_battle_kit`:
+
+```
+cmd /c "mklink /D addons\tactical_battle_kit ..\submodules\tactical_battle_kit\src\addons\tactical_battle_kit"   # Windows
+ln -s ../submodules/tactical_battle_kit/src/addons/tactical_battle_kit addons/tactical_battle_kit          # Linux, macOS
+```
+
+(The sibling repos do this with a `symlink-config.txt` and
+`setup.ps1`/`setup.sh`; copy those if the project has none.) Kit improvements then flow by moving the
 gitlink.
 
 ## As a copy
@@ -23,6 +29,10 @@ the plugin in Project Settings or leave it disabled; the kit registers no
 editor UI and its classes are available either way.
 
 ## First battle
+
+Import once before any headless run (`godot --headless --import --path .`):
+a fresh project has no class cache and every kit `class_name` is undeclared
+until then. Create `artifacts/.gdignore` so reports are never scanned.
 
 1. Write a `BattleRuleset` subclass (`docs/write-a-ruleset.md`).
 2. Write a battle file (`docs/battle-file.md`), naming that script.

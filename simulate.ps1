@@ -11,7 +11,13 @@ param(
     [int]$Runs = 0,
     [int]$Seed = -1,
     [switch]$Trace,
-    [string]$GodotExe = $env:GODOT_EXE
+    [string]$GodotExe = $env:GODOT_EXE,
+    # The Godot project to run in. Defaults to src/ (this repo's layout) or the
+    # script's own directory when it holds project.godot, so a consumer can copy
+    # this file to its root unchanged.
+    [string]$ProjectPath = "",
+    # Suite directory relative to the project.
+    [string]$SuiteDir = "sim/suites"
 )
 
 $ErrorActionPreference = "Stop"
@@ -26,13 +32,17 @@ if (-not $GodotExe) {
 }
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$project = Join-Path $root "src"
-$suiteDir = Join-Path $project "sim/suites"
-$suites = @(Get-ChildItem -Path $suiteDir -Filter "*.json" -File | Sort-Object Name)
+if (-not $ProjectPath) {
+    $ProjectPath = if (Test-Path (Join-Path $root "src/project.godot")) { Join-Path $root "src" } else { $root }
+}
+$project = (Resolve-Path $ProjectPath).Path
+# PowerShell variables are case-insensitive: this must not be named $suiteDir.
+$suitePath = Join-Path $project $SuiteDir
+$suites = @(Get-ChildItem -Path $suitePath -Filter "*.json" -File | Sort-Object Name)
 if ($Suite) {
     $suites = @($suites | Where-Object { $_.BaseName -eq $Suite -or $_.Name -eq $Suite })
     if ($suites.Count -eq 0) {
-        Write-Host "No suite named '$Suite' under $suiteDir." -ForegroundColor Red
+        Write-Host "No suite named '$Suite' under $suitePath." -ForegroundColor Red
         exit 2
     }
 }
@@ -51,7 +61,7 @@ foreach ($file in $suites) {
         "--headless", "--path", $project,
         "--script", "res://addons/tactical_battle_kit/sim/sim_cli.gd",
         "--log-file", $log,
-        "--", "--suite", ("res://sim/suites/" + $file.Name)
+        "--", "--suite", ("res://" + $SuiteDir.TrimEnd("/") + "/" + $file.Name)
     )
     if ($Runs -gt 0) { $args += @("--runs", $Runs) }
     if ($Seed -ge 0) { $args += @("--seed", $Seed) }
