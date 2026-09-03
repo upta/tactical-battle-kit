@@ -1,6 +1,6 @@
 {
   "suite_id": "battlefield_stacks_and_cloud",
-  "description": "Heroes-style battle on a painted half-offset-square map: two-cell flyers move, liches cast death clouds that also hurt their own side, stacks retaliate once a round, nothing is rejected, and the battlefield AI beats random play from either side. The mirror favors necropolis (three bone dragons at speed 9 strike first); that is the army list, not the engine, and the counts in grassland.json are the knob.",
+  "description": "Heroes-style battle on a painted half-offset-square map: two-cell flyers move, liches cast death clouds that also hurt their own side, stacks retaliate once a round, nothing is rejected, and the battlefield AI beats random play from either side. On the columns layout the mirror sits near even (it favored necropolis on rows, which says how much adjacency shapes a tactics game); the counts in grassland.json are the knob.",
   "battle": "res://examples/battlefield/battles/grassland.json",
   "runs": 30,
   "seed": 8000,

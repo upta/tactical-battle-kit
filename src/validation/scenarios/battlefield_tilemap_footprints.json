@@ -36,7 +36,7 @@
     {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.load_error", "comparator": "eq", "expected": ""},
     {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.grid_width", "comparator": "eq", "expected": 15},
     {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.grid_height", "comparator": "eq", "expected": 11},
-    {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.topology", "comparator": "eq", "expected": "hex"},
+    {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.topology", "comparator": "eq", "expected": "hex_columns"},
     {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.obstacle_6_1", "comparator": "eq", "expected": true},
     {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.obstacle_5_1", "comparator": "eq", "expected": false},
     {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.units.c_griffins.cell_count", "comparator": "eq", "expected": 2},

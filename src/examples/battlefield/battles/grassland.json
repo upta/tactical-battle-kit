@@ -1,7 +1,7 @@
 {
   "battle_id": "grassland",
   "ruleset": "res://examples/battlefield/battlefield_ruleset.gd",
-  "topology": "hex",
+  "topology": "hex_columns",
   "map_scene": "res://examples/battlefield/map/grassland_map.tscn",
   "ground_layer": "Ground",
   "overlay_layers": ["Obstacles"],

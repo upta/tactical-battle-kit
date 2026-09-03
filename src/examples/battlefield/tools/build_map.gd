@@ -1,7 +1,8 @@
 extends SceneTree
 
 # One-time map bootstrap for the battlefield demo: a half-offset-square
-# TileSet (Liberty or Death's brick rows; hex adjacency, odd-r coordinates)
+# TileSet with a VERTICAL offset axis (brick columns; hex adjacency, odd-q
+# coordinates, the kit's "hex_columns")
 # and the grassland map as a TileMapLayer scene. After this runs the .tscn
 # is the source of truth and is edited in the editor.
 #
@@ -73,7 +74,7 @@ func _build_tileset() -> TileSet:
 
 	var tileset := TileSet.new()
 	tileset.tile_shape = TileSet.TILE_SHAPE_HALF_OFFSET_SQUARE
-	tileset.tile_offset_axis = TileSet.TILE_OFFSET_AXIS_HORIZONTAL
+	tileset.tile_offset_axis = TileSet.TILE_OFFSET_AXIS_VERTICAL
 	tileset.tile_layout = TileSet.TILE_LAYOUT_STACKED
 	tileset.tile_size = Vector2i(TILE, TILE)
 	tileset.add_custom_data_layer()

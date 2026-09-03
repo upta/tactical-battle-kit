@@ -16,7 +16,7 @@ extends RefCounted
 ## Half-offset-square and hexagon tile shapes use the same cell coordinates
 ## as HexTopology: horizontal offset axis + stacked layout is "hex" (odd-r),
 ## vertical offset axis + stacked is "hex_columns" (odd-q). No conversion:
-## the battlefield example is a rows layout.
+## the battlefield example is a columns layout.
 
 
 static func origin(ground: TileMapLayer) -> Vector2i:
