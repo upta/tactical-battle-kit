@@ -39,6 +39,60 @@ silent architecture), not a workaround.
 
 Randomness always comes from the `BattleRng` passed in. Never `randi()`.
 
+## Seam signatures (so nobody has to open the addon)
+
+```gdscript
+# BattleRuleset
+func ai_scripts() -> Dictionary[String, GDScript]        # {"greedy": GreedyAi}, scripts not instances
+func configure(params: Dictionary) -> void               # receives "ruleset.<key>" overrides and sweeps
+func summarize(state: BattleState) -> Dictionary         # numeric leaves only, averaged per matchup
+func movement_cost(state: BattleState, unit: BattleUnit, cell: Vector2i) -> int   # -1 impassable
+func check_outcome(state: BattleState) -> BattleOutcome  # null keeps playing; BattleOutcome.new(winner, reason)
+func on_event(state: BattleState, engine: BattleEngine, event: Dictionary) -> void
+
+# ActionRule
+func id() -> String
+func slot() -> String                    # "action" default, "move", or "" to spend nothing
+func ends_activation() -> bool           # true spends EVERY slot in activation_slots(): no move afterwards
+func can_use(state: BattleState, unit: BattleUnit) -> bool
+func enumerate(state: BattleState, unit: BattleUnit) -> Array[BattleAction]   # make_action(unit, params)
+func apply(state: BattleState, engine: BattleEngine, action: BattleAction, rng: BattleRng) -> void
+
+# AttackRule template (extends ActionRule): override any of
+func can_target(state, attacker, defender) -> bool
+func resolve(state, engine, attacker, defender, rng, counter: bool) -> void
+func after_attack(state, engine, attacker, defender) -> void
+var counterattacks := true; var counter_multiplier := 0.5; var attack_ends_activation := true
+
+# AreaRule template (extends ActionRule)
+var cast_range := 0                      # 0: the caster's own cell is the only anchor
+var affects := AreaRule.AFFECTS_ENEMIES  # or AFFECTS_ALLIES, AFFECTS_ALL
+func pattern() -> AreaPattern            # AreaPattern.radius(n), ring(n), line(n), from_offsets([...])
+func anchors(state, unit) -> Array[Vector2i]
+func affect(state, engine, caster, target, rng) -> void       # once per covered unit; heal() and deal_damage() helpers
+func after_apply(state, engine, caster, action) -> void
+# The caster IS a target when the pattern covers its cell and affects allies.
+# Emits ability_used {unit_id, ability, anchor, cells} then whatever affect() emits.
+
+# AiController
+func choose(state: BattleState, engine: BattleEngine, turn: BattleTurn, rng: BattleRng) -> BattleAction
+
+# Handy state queries
+state.distance_between(a: BattleUnit, b: BattleUnit) -> int
+state.units_on_field_of(faction) / enemies_on_field_of(faction) -> Array[BattleUnit]
+state.grid.distance(a: Vector2i, b: Vector2i) -> int
+```
+
+Kit event keys the report folds: `attacked {attacker_id, defender_id,
+damage, counter}`, `healed {unit_id, by, amount}` (summed into
+`metrics.faction.<f>.healed` by the healed unit's faction), `unit_died
+{unit_id, killer_id}`, `left_field {unit_id, status, by}`. Every other type
+is only counted under `metrics.events.<type>`.
+
+An `enumerate` that returns nothing when the action would do nothing (no
+hurt ally in range) is the intended pattern: it keeps RandomAi honest and
+the legal list small.
+
 ## Minimum files for a new example
 
 ```

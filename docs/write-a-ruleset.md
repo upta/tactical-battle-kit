@@ -87,7 +87,10 @@ func apply(state: BattleState, engine: BattleEngine, action: BattleAction, _rng:
 ```
 
 `slot()` defaults to `"action"`; return `""` for something that spends
-nothing, or override `spends()` for conditional spending (the default
+nothing. `ends_activation()` true spends every slot in
+`activation_slots()`, so the unit cannot move afterwards; false spends only
+the rule's slot and leaves the move slot usable. Override `spends()` for
+conditional spending (the default
 `MoveRule` spends `move` only when the ruleset says one move per activation
 or the budget is used up).
 

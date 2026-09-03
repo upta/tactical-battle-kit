@@ -55,7 +55,7 @@ func run(suite: Dictionary) -> Dictionary:
 	if battle_data.is_empty():
 		return _fail_runtime(report, "Suite '%s' has no loadable battle." % suite_id, started)
 
-	var base_overrides: Dictionary = suite.get("overrides", {})
+	var base_overrides := normalize_overrides(suite.get("overrides", {}))
 	var matchups := _resolve_matchups(suite, battle_data)
 	var sweep_points := _resolve_sweep(suite)
 	var trace_kept := false
@@ -113,6 +113,28 @@ func _fail_runtime(report: Dictionary, message: String, started: int) -> Diction
 	report["exit_code"] = EXIT_RUNTIME_ERROR
 	report["duration_msec"] = Time.get_ticks_msec() - started
 	return report
+
+
+const OVERRIDE_ROOTS: Array[String] = ["battle", "ruleset", "unit_defs", "terrain_defs"]
+
+
+## Accept dotted keys ("ruleset.heal_range") as well as nested objects, and
+## warn about a root the loader will never read: an override that silently
+## reaches nothing is a suite that proves nothing.
+static func normalize_overrides(raw: Dictionary) -> Dictionary:
+	var result := {}
+	for key_variant: Variant in raw.keys():
+		var key := str(key_variant)
+		if key.contains("."):
+			BattleLoader.set_dotted_path(result, key, raw[key_variant])
+		elif raw[key_variant] is Dictionary and result.has(key):
+			result[key] = BattleLoader.deep_merge(result[key], raw[key_variant])
+		else:
+			result[key] = raw[key_variant]
+	for root: Variant in result.keys():
+		if not OVERRIDE_ROOTS.has(str(root)):
+			push_warning("Override root '%s' is not one of %s and will be ignored." % [str(root), ", ".join(OVERRIDE_ROOTS)])
+	return result
 
 
 func _resolve_battle(suite: Dictionary) -> Dictionary:

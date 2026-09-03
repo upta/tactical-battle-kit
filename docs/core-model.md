@@ -40,8 +40,22 @@ that changes it is a `BattleEngine`, and everything that happened is in
 
 ## Events
 
-Every event is a dictionary with `type` and `round`. Kit types and their keys
-are listed in `battle_events.gd`; games add their own freely. The
+Every event is a dictionary with `type` and `round`. Kit types and their keys:
+
+| Type | Keys |
+| --- | --- |
+| `battle_started`, `battle_ended {winner, reason}` | |
+| `round_started`, `round_ended` | |
+| `turn_started {faction, phase, unit_ids}`, `turn_ended {faction, phase, action_count}` | |
+| `stepped {unit_id, from, to}` | one per cell entered |
+| `moved {unit_id, from, to, path, cost, interrupted}` | |
+| `attacked {attacker_id, defender_id, damage, counter, defender_hp}` | games add `hit`, `chance`, `reaction`, ... |
+| `ability_used {unit_id, ability, anchor, cells}` | |
+| `healed {unit_id, by, amount, hp}` | |
+| `unit_died {unit_id, killer_id}`, `left_field {unit_id, status, by}`, `unit_spawned {unit_id, faction, cell}` | |
+| `waited {unit_id}`, `rejected {unit_id, action, reason}` | |
+
+Cells are `[x, y]` arrays. Games add their own types freely. The
 simulator's `fold_metrics` reads `attacked`, `healed`, `unit_died`,
 `left_field` and counts every type; the ruleset's `summarize` reads whatever
 it wants. Nothing else derives facts by diffing state.

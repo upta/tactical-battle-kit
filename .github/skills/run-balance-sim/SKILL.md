@@ -32,6 +32,14 @@ Override and sweep roots, all dotted paths:
 - `battle.<json path>`: deep-merged onto the battle dictionary (`battle.units`
   replaces the whole list; `battle.custom.supply.regular` patches one value)
 
+`overrides` is a nested object: `{"ruleset": {"heal_range": 0}}`. Dotted
+keys are accepted too (`{"ruleset.heal_range": 0}`) and expanded; a root
+that is not one of the four above is a warning in the log, never silent.
+
+Proving RED without touching the rule: a temporary suite with an `overrides`
+block that disables the mechanic (`{"ruleset": {"heal_range": 0}}`), run
+with `-Suite <id>`, then deleted along with its `artifacts/sim/<id>/`.
+
 Comparators: `eq neq gt gte lt lte`. A metric leaf missing from an existing
 table reads as 0 (no run ended by that reason); a missing table fails.
 

@@ -48,6 +48,9 @@ static func build(data: Dictionary, overrides: Dictionary = {}) -> BattleState:
 	if script == null:
 		push_error("Ruleset script did not load: %s" % ruleset_path)
 		return null
+	if not script.can_instantiate():
+		push_error("Ruleset script failed to compile: %s (the parse errors above are the cause)." % ruleset_path)
+		return null
 	var ruleset: BattleRuleset = script.new()
 	return build_with_ruleset(merged, ruleset, overrides)
 
