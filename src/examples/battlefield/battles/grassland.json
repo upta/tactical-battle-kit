@@ -1,0 +1,36 @@
+{
+  "battle_id": "grassland",
+  "ruleset": "res://examples/battlefield/battlefield_ruleset.gd",
+  "topology": "hex",
+  "map_scene": "res://examples/battlefield/map/grassland_map.tscn",
+  "ground_layer": "Ground",
+  "overlay_layers": ["Obstacles"],
+  "terrain_legend": {
+    "grass":    {"id": "grass",    "glyph": ".", "move_cost": 1, "color": "#86a860"},
+    "obstacle": {"id": "obstacle", "glyph": "o", "passable": false, "color": "#6b5a42", "tags": ["obstacle"]}
+  },
+  "unit_defs": {
+    "pikeman":     {"id": "pikeman",     "display_name": "Pikemen",      "attack": 4, "defense": 5, "move": 4, "range_min": 1, "range_max": 1, "creature_hp": 10, "damage_min": 1, "damage_max": 3, "speed": 4, "size": 1},
+    "archer":      {"id": "archer",      "display_name": "Archers",      "attack": 6, "defense": 3, "move": 4, "range_min": 1, "range_max": 10, "creature_hp": 10, "damage_min": 2, "damage_max": 3, "speed": 4, "shots": 12, "size": 1, "tags": ["ranged"]},
+    "griffin":     {"id": "griffin",     "display_name": "Griffins",     "attack": 8, "defense": 8, "move": 6, "range_min": 1, "range_max": 1, "creature_hp": 25, "damage_min": 3, "damage_max": 6, "speed": 6, "size": 2, "flying": true, "tags": ["big"]},
+    "skeleton":    {"id": "skeleton",    "display_name": "Skeletons",    "attack": 5, "defense": 4, "move": 4, "range_min": 1, "range_max": 1, "creature_hp": 6, "damage_min": 1, "damage_max": 3, "speed": 4, "size": 1},
+    "lich":        {"id": "lich",        "display_name": "Liches",       "attack": 13, "defense": 10, "move": 5, "range_min": 1, "range_max": 10, "creature_hp": 30, "damage_min": 11, "damage_max": 13, "speed": 6, "shots": 12, "size": 1, "tags": ["ranged", "cloud"]},
+    "bone_dragon": {"id": "bone_dragon", "display_name": "Bone dragons", "attack": 17, "defense": 15, "move": 7, "range_min": 1, "range_max": 1, "creature_hp": 150, "damage_min": 25, "damage_max": 50, "speed": 9, "size": 2, "flying": true, "tags": ["big"]}
+  },
+  "factions": [
+    {"id": "castle", "ai": "battlefield"},
+    {"id": "necropolis", "ai": "battlefield"}
+  ],
+  "units": [
+    {"id": "c_pikes1", "faction": "castle", "def": "pikeman", "cell": [0, 1], "custom": {"count": 60}},
+    {"id": "c_archers", "faction": "castle", "def": "archer", "cell": [0, 3], "custom": {"count": 40}},
+    {"id": "c_griffins", "faction": "castle", "def": "griffin", "cell": [0, 5], "custom": {"count": 20}},
+    {"id": "c_pikes2", "faction": "castle", "def": "pikeman", "cell": [0, 7], "custom": {"count": 60}},
+    {"id": "c_archers2", "faction": "castle", "def": "archer", "cell": [0, 9], "custom": {"count": 40}},
+    {"id": "n_skels1", "faction": "necropolis", "def": "skeleton", "cell": [14, 1], "custom": {"count": 60}},
+    {"id": "n_liches", "faction": "necropolis", "def": "lich", "cell": [14, 3], "custom": {"count": 6}},
+    {"id": "n_dragons", "faction": "necropolis", "def": "bone_dragon", "cell": [13, 5], "custom": {"count": 3}},
+    {"id": "n_skels2", "faction": "necropolis", "def": "skeleton", "cell": [14, 7], "custom": {"count": 60}},
+    {"id": "n_liches2", "faction": "necropolis", "def": "lich", "cell": [14, 9], "custom": {"count": 6}}
+  ]
+}

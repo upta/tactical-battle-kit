@@ -1,0 +1,64 @@
+{
+  "scenario_id": "battlefield_tilemap_footprints",
+  "version": 4,
+  "description": "The grassland grid is built from the painted half-offset-square map with hex adjacency and obstacles where painted. The griffins occupy two cells; when their turn comes the presentation preselects them and highlights both cells of every destination; a submitted move lands them on two new cells.",
+  "harness_scene": "res://validation/harnesses/battlefield_harness.tscn",
+  "done_contract": {
+    "map_size": [15, 11],
+    "wait_frame_budget": 300
+  },
+  "artifact_contract": {
+    "required_files": [
+      "summary.json",
+      "event_log.json",
+      "scene_tree.json",
+      "console.log",
+      "screenshots/loaded.png",
+      "screenshots/griffins_turn.png",
+      "screenshots/moved.png"
+    ],
+    "missing_file_is_failure": true
+  },
+  "exit_codes": {
+    "pass": 0,
+    "assertion_failure": 1,
+    "runtime_error": 2,
+    "timeout": 3,
+    "artifact_generation_error": 4
+  },
+  "cli_contract": {
+    "command_template": "godot --path <project> -- --test-mode --scenario <path> --artifacts <dir>"
+  },
+  "steps": [
+    {"op": "load_harness", "scene": "res://validation/harnesses/battlefield_harness.tscn"},
+    {"op": "wait_frames", "frames": 5},
+    {"op": "checkpoint", "name": "loaded"},
+    {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.load_error", "comparator": "eq", "expected": ""},
+    {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.grid_width", "comparator": "eq", "expected": 15},
+    {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.grid_height", "comparator": "eq", "expected": 11},
+    {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.topology", "comparator": "eq", "expected": "hex"},
+    {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.obstacle_6_1", "comparator": "eq", "expected": true},
+    {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.obstacle_5_1", "comparator": "eq", "expected": false},
+    {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.units.c_griffins.cell_count", "comparator": "eq", "expected": 2},
+    {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.units.c_griffins.cells", "comparator": "eq", "expected": "0,5,1,5"},
+    {"op": "assert_value", "checkpoint": "loaded", "path": "harness_state.units.c_griffins.count", "comparator": "eq", "expected": 20},
+    {"op": "press_action", "action": "sim_step"},
+    {"op": "wait_frames", "frames": 2},
+    {"op": "release_action", "action": "sim_step"},
+    {"op": "wait_until", "path": "harness_state.human_waiting", "comparator": "eq", "expected": true, "timeout_frames": 300},
+    {"op": "wait_frames", "frames": 3},
+    {"op": "checkpoint", "name": "griffins_turn"},
+    {"op": "assert_value", "checkpoint": "griffins_turn", "path": "harness_state.turn_unit", "comparator": "eq", "expected": "c_griffins"},
+    {"op": "assert_value", "checkpoint": "griffins_turn", "path": "harness_state.highlighted_cells", "comparator": "gt", "expected": 4},
+    {"op": "press_action", "action": "sim_submit"},
+    {"op": "wait_frames", "frames": 2},
+    {"op": "release_action", "action": "sim_submit"},
+    {"op": "wait_until", "path": "harness_state.submitted", "comparator": "eq", "expected": 1, "timeout_frames": 60},
+    {"op": "wait_frames", "frames": 20},
+    {"op": "checkpoint", "name": "moved"},
+    {"op": "assert_value", "checkpoint": "moved", "path": "harness_state.units.c_griffins.cell_count", "comparator": "eq", "expected": 2},
+    {"op": "assert_value", "checkpoint": "moved", "path": "harness_state.units.c_griffins.cells", "comparator": "neq", "expected": "0,5,1,5"},
+    {"op": "assert_value", "checkpoint": "moved", "path": "harness_state.units.c_griffins.status", "comparator": "eq", "expected": "active"},
+    {"op": "quit"}
+  ]
+}

@@ -19,6 +19,7 @@ const BATTLES: Array[Dictionary] = [
 	{"label": "Frontier (hex)", "path": "res://examples/frontier/battles/river_crossing.json"},
 	{"label": "Chess", "path": "res://examples/chess/battles/standard.json"},
 	{"label": "Breach (TileMap)", "path": "res://examples/breach/battles/warehouse.json", "scene": "res://examples/breach/breach.tscn"},
+	{"label": "Battlefield (hex stacks)", "path": "res://examples/battlefield/battles/grassland.json", "scene": "res://examples/battlefield/battlefield.tscn"},
 ]
 const BOOT_MARKER := "[Kit] Battle ready: "
 

@@ -35,7 +35,8 @@ silent architecture), not a workaround.
 | Tunables a sweep should reach | Plain vars on the ruleset, read in `configure(params)` |
 | Numbers for the balance report | `summarize(state)`; numeric leaves only |
 | An AI by name | `ai_scripts()` returning `{id: Script}` |
-| Big units | `UnitDef.footprint` offsets (symmetric, no rotation) |
+| Big units | `UnitDef.footprint` offsets (symmetric, no rotation); the battlefield example's two-cell creatures |
+| Pass over but never stop (flyers over obstacles) | `can_stop_at(state, unit, cell)` on the ruleset |
 
 Randomness always comes from the `BattleRng` passed in. Never `randi()`.
 

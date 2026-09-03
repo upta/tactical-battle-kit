@@ -52,6 +52,8 @@ static func can_stop(state: BattleState, mover: BattleUnit, anchor: Vector2i, oc
 	for cell: Vector2i in state.footprint_at(mover, anchor):
 		if occupied.has(cell):
 			return false
+		if not state.ruleset.can_stop_at(state, mover, cell):
+			return false
 	return true
 
 

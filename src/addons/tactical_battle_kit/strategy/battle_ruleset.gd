@@ -54,6 +54,13 @@ func can_pass_through(state: BattleState, mover: BattleUnit, other: BattleUnit) 
 	return not are_enemies(mover.faction, other.faction)
 
 
+## May [param unit] END a move on [param cell]? Default yes for anything it
+## can enter. Override for "pass over but never stop" terrain: flyers over
+## obstacles, cavalry over fences.
+func can_stop_at(_state: BattleState, _unit: BattleUnit, _cell: Vector2i) -> bool:
+	return true
+
+
 func move_budget(state: BattleState, unit: BattleUnit) -> int:
 	return unit.def.move
 

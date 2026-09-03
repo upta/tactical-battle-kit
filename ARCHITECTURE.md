@@ -17,6 +17,7 @@ this file has a bug: fix it or delete it.
 | `src/examples/skirmish/` | Warsong-flavored square skirmish: `skirmish_ruleset.gd`, `rules/` (aura damage model, commander attack rule, heal aura), `ai/greedy_ai.gd`, `data/` (.tres defs), `battles/open_field.json`. |
 | `src/examples/chess/` | Chess: `chess_ruleset.gd` (one action per turn, checkmate outcome), `chess_move_rule.gd` (all movement, king safety by ray casting), `ai/capture_first_ai.gd`, `battles/standard.json` (inline defs). |
 | `src/examples/breach/` | XCOM-flavored breach on a painted TileMap: `breach_ruleset.gd` (action points, cover from tile tags, overwatch reactions through `apply_reaction`, reinforcements through `spawn`), `rules/`, `ai/`, `map/` (generated tileset and TileMapLayer scene; `tools/build_map.gd` bootstrapped them once), `breach.tscn` + `breach_scene.gd` + `breach_overlay.gd` (its own presentation: TileMapLayers, highlight layer, overlay drawing). |
+| `src/examples/battlefield/` | Heroes-style stacks on a painted half-offset-square map: `battlefield_ruleset.gd` (initiative scheduler with Wait, stacks, flyers via `movement_cost` + `can_stop_at`), `stack_def.gd` (subclassed def: creature hp, damage range, speed, shots, size, flying), `rules/` (melee with one retaliation, volley, death cloud AreaRule with friendly fire, defend, delay), `ai/`, `map/` (generated tileset and TileMapLayer scene), `battlefield.tscn` + scene and overlay scripts. |
 | `src/examples/frontier/` | Hex musket war: `frontier_ruleset.gd` (per-unit initiative, supply, entrench clearing), `rules/` (musket attack with powder and routing, entrench, damage model), `ai/frontier_ai.gd`, `battles/river_crossing.json`. |
 | `src/sim/suites/` | Balance suites, one claim each; `./simulate.ps1` runs them all. |
 | `src/validation/` | The scenario suite: `scenarios/*.json`, `harnesses/*.tscn`, `scripts/harness_controllers/`, `fixtures/*.json` (tiny battles). |
@@ -39,6 +40,7 @@ these and nothing else:
   (`spends()`, `ends_activation()`), records the action on the turn and polls
   the outcome.
 - **Movement.** `movement_cost(state, unit, cell)` (-1 impassable),
+  `can_stop_at` (pass over but never end there: flyers over obstacles),
   `can_pass_through`, `move_budget`, `single_move`. `Pathfinder` reads these;
   nothing reads `TerrainDef.move_cost` directly except the default.
 - **Damage.** `damage_model()`; `AttackRule`/`AreaRule` call

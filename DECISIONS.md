@@ -83,6 +83,12 @@ and gates itself with `can_use` (overwatch stance). *Why:* the watcher has
 already spent its turn, and a reaction that had to be "legal for the active
 turn" could never fire.
 
+**D16: `can_stop_at` is a ruleset strategy, separate from `movement_cost`.**
+"Pass over but never stop" (flyers over obstacles, cavalry over fences)
+cannot be expressed as a cost; the pathfinder asks the ruleset before it
+offers a destination. Added during the battlefield build as a deviation
+from its proposal, which had claimed no kit change.
+
 ## Closed
 
 (none yet)

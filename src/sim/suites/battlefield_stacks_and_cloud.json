@@ -1,0 +1,22 @@
+{
+  "suite_id": "battlefield_stacks_and_cloud",
+  "description": "Heroes-style battle on a painted half-offset-square map: two-cell flyers move, liches cast death clouds that also hurt their own side, stacks retaliate once a round, nothing is rejected, and the battlefield AI beats random play from either side. The mirror favors necropolis (three bone dragons at speed 9 strike first); that is the army list, not the engine, and the counts in grassland.json are the knob.",
+  "battle": "res://examples/battlefield/battles/grassland.json",
+  "runs": 30,
+  "seed": 8000,
+  "matchups": [
+    {"id": "battlefield_mirror", "ai": {"castle": "battlefield", "necropolis": "battlefield"}},
+    {"id": "battlefield_vs_random", "ai": {"castle": "battlefield", "necropolis": "random"}},
+    {"id": "random_vs_battlefield", "ai": {"castle": "random", "necropolis": "battlefield"}}
+  ],
+  "assertions": [
+    {"metric": "metrics.events.rejected", "comparator": "eq", "expected": 0},
+    {"metric": "metrics.events.moved", "matchup": "battlefield_mirror", "comparator": "gt", "expected": 4},
+    {"metric": "custom.cloud_casts", "matchup": "battlefield_mirror", "comparator": "gt", "expected": 1},
+    {"metric": "custom.cloud_friendly_damage", "matchup": "battlefield_mirror", "comparator": "gt", "expected": 0},
+    {"metric": "custom.retaliations", "matchup": "battlefield_mirror", "comparator": "gt", "expected": 1},
+    {"metric": "draw_rate", "matchup": "battlefield_mirror", "comparator": "lte", "expected": 0.3},
+    {"metric": "win_rate.castle", "matchup": "battlefield_vs_random", "comparator": "gte", "expected": 0.6},
+    {"metric": "win_rate.necropolis", "matchup": "random_vs_battlefield", "comparator": "gte", "expected": 0.7}
+  ]
+}
