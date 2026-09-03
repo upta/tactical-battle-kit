@@ -46,7 +46,10 @@ jobs:
           fail=0
           grep -q '^COMPILE CHECK COMPLETE: [1-9]' /tmp/compile.log ||
             { echo "No completion marker, or the walk reached no scripts."; fail=1; }
-          if grep -hE '^(USER |SCRIPT )?ERROR:|^COMPILE FAIL:' /tmp/compile.log; then fail=1; fi
+          # "resources still in use at exit" is Godot's exit-time leak report on Linux
+          # after the walk has already finished and printed its marker; it is not a
+          # compile failure (CLAUDE.md § Known issues).
+          if grep -hE '^(USER |SCRIPT )?ERROR:|^COMPILE FAIL:' /tmp/compile.log | grep -v 'resources still in use at exit'; then fail=1; fi
           [ "$status" -eq 0 ] || { echo "Compile pass exited $status."; fail=1; }
           exit $fail
 

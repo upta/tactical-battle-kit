@@ -63,7 +63,7 @@ $failed = $false
 # compile_check.gd's own verdict first, then the engine's raw diagnostics: the
 # trailing context line is the `at:` location, which names the offending file.
 $compileFails = @(Select-String -Path $log -Pattern "^COMPILE FAIL:")
-$logErrors = @(Select-String -Path $log -Pattern "^(USER |SCRIPT )?ERROR:" -Context 0, 1)
+$logErrors = @(Select-String -Path $log -Pattern "^(USER |SCRIPT )?ERROR:" -Context 0, 1 | Where-Object { $_.Line -notmatch "resources still in use at exit" })
 if ($compileFails.Count -gt 0 -or $logErrors.Count -gt 0) {
     Write-Host ""
     Write-Host "Script errors found:" -ForegroundColor Red

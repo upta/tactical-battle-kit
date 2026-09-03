@@ -116,6 +116,10 @@ Work items are disposable. Documentation is not.
   crash with nothing imported wrong: re-run, it passes. If a scenario run
   shows that code with `summary.json` saying pass, suspect a static var
   holding an object or closure (B-1).
+- On Linux (CI) the compile walk logs `ERROR: N resources still in use at
+  exit` after it has finished; Windows does not, even with `--verbose`. The
+  compile gate ignores that one line. If N jumps after a change, that change
+  leaked a resource reference; find it before the number becomes furniture.
 
 ## Style
 
