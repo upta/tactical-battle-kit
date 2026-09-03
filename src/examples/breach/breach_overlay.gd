@@ -5,6 +5,7 @@ extends Node2D
 # effects, positioned by the map instead of by cell size.
 
 const EFFECT_SECONDS := 0.5
+const SHOT_SECONDS := 1.4
 const _FACTION_COLORS: Dictionary[String, Color] = {
 	"squad": Color(0.3, 0.55, 0.95),
 	"aliens": Color(0.85, 0.3, 0.25),
@@ -16,6 +17,16 @@ var selected: String = ""
 
 var _scene: Node2D
 var _effects: Array[Dictionary] = []
+var _hover_cell: Vector2i = Vector2i(-1, -1)
+var _hover_lines: Array[String] = []
+
+
+func set_hover(cell: Vector2i, lines: Array[String]) -> void:
+	if cell == _hover_cell and lines == _hover_lines:
+		return
+	_hover_cell = cell
+	_hover_lines = lines
+	queue_redraw()
 
 
 func setup(scene: Node2D) -> void:
@@ -40,7 +51,8 @@ func show_events(events: Array[Dictionary]) -> void:
 				_effects.append({
 					"kind": "shot", "from": _center(attacker.cell), "to": _center(defender.cell),
 					"damage": int(event.get("damage", 0)), "hit": bool(event.get("hit", true)),
-					"reaction": bool(event.get("reaction", false)), "chance": int(event.get("chance", 0)), "t": 0.0,
+					"reaction": bool(event.get("reaction", false)), "chance": int(event.get("chance", 0)),
+					"cover": str(event.get("cover", "none")), "hunkered": bool(event.get("hunkered", false)), "t": 0.0,
 				})
 			BattleEvents.MOVED:
 				var points: Array[Vector2] = []
@@ -69,7 +81,8 @@ func _process(delta: float) -> void:
 	var kept: Array[Dictionary] = []
 	for effect: Dictionary in _effects:
 		effect["t"] = float(effect["t"]) + delta
-		if float(effect["t"]) < EFFECT_SECONDS:
+		var lifetime := SHOT_SECONDS if str(effect["kind"]) == "shot" else EFFECT_SECONDS
+		if float(effect["t"]) < lifetime:
 			kept.append(effect)
 	_effects = kept
 	if _effects.is_empty():
@@ -107,6 +120,20 @@ func _draw() -> void:
 		_label(font, unit.def.display_name, center + Vector2(0.0, radius + 6.0), 8)
 	for effect: Dictionary in _effects:
 		_draw_effect(font, effect)
+	_draw_hover(font)
+
+
+func _draw_hover(font: Font) -> void:
+	if _hover_cell.x < 0 or _hover_lines.is_empty():
+		return
+	var at := _center(_hover_cell) + Vector2(0.0, -30.0)
+	var size := Vector2(78.0, 10.0 * _hover_lines.size() + 6.0)
+	var rect := Rect2(at - Vector2(size.x * 0.5, size.y), size)
+	draw_rect(rect, Color(0.08, 0.08, 0.1, 0.92))
+	draw_rect(rect, Color(1, 1, 1, 0.5), false, 1.0)
+	for i: int in _hover_lines.size():
+		var origin := Vector2(rect.position.x, rect.position.y + 3.0 + 10.0 * float(i))
+		draw_string(font, origin + Vector2(0.0, 8.0), _hover_lines[i], HORIZONTAL_ALIGNMENT_CENTER, size.x, 8, Color(1.0, 0.95, 0.6) if i == 0 else Color.WHITE)
 
 
 func _label(font: Font, text: String, top_center: Vector2, size: int, color: Color = Color.WHITE) -> void:
@@ -117,7 +144,8 @@ func _label(font: Font, text: String, top_center: Vector2, size: int, color: Col
 
 
 func _draw_effect(font: Font, effect: Dictionary) -> void:
-	var p := clampf(float(effect["t"]) / EFFECT_SECONDS, 0.0, 1.0)
+	var lifetime := SHOT_SECONDS if str(effect["kind"]) == "shot" else EFFECT_SECONDS
+	var p := clampf(float(effect["t"]) / lifetime, 0.0, 1.0)
 	var fade := 1.0 - p
 	match str(effect["kind"]):
 		"shot":
@@ -126,11 +154,16 @@ func _draw_effect(font: Font, effect: Dictionary) -> void:
 			var tint := Color(1.0, 0.55, 0.2) if bool(effect["reaction"]) else Color(1.0, 0.95, 0.4)
 			draw_line(from, to, Color(tint, 0.5 * fade), 1.5)
 			draw_circle(from.lerp(to, clampf(p * 2.0, 0.0, 1.0)), 3.0, tint)
-			if p > 0.3:
+			if p > 0.2:
 				var hit := bool(effect["hit"])
-				var text := "-%d" % int(effect["damage"]) if hit else "miss (%d%%)" % int(effect["chance"])
+				var headline := "-%d" % int(effect["damage"]) if hit else "MISS"
+				if bool(effect["reaction"]):
+					headline = "overwatch " + headline
+				var why := "%d%% · %s" % [int(effect["chance"]), ShootRule.cover_label(str(effect["cover"]), bool(effect["hunkered"]))]
 				draw_arc(to, 14.0 + p * 6.0, 0.0, TAU, 24, Color(1.0, 0.25, 0.2, fade) if hit else Color(0.8, 0.8, 0.8, fade), 2.0)
-				_label(font, text, to + Vector2(0.0, -26.0 - p * 8.0), 9, Color(1.0, 0.4, 0.3) if hit else Color(0.85, 0.85, 0.85))
+				var lift := -36.0 - p * 6.0
+				_label(font, headline, to + Vector2(0.0, lift), 9, Color(1.0, 0.4, 0.3) if hit else Color(0.85, 0.85, 0.85))
+				_label(font, why, to + Vector2(0.0, lift + 10.0), 8, Color(1.0, 0.95, 0.6))
 		"trail":
 			var points: Array[Vector2] = []
 			points.assign(effect["points"])
@@ -147,3 +180,7 @@ func _draw_effect(font: Font, effect: Dictionary) -> void:
 		"spawn":
 			var at: Vector2 = effect["at"]
 			draw_arc(at, 18.0 * fade + 4.0, 0.0, TAU, 24, Color(0.9, 0.3, 0.9, fade), 2.5)
+
+
+func hover_lines() -> Array[String]:
+	return _hover_lines.duplicate()

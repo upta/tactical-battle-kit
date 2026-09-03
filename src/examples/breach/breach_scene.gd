@@ -190,6 +190,25 @@ func _on_decision_requested(_turn: BattleTurn, legal: Array[BattleAction]) -> vo
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_handle_click(cell_at_mouse())
+	elif event is InputEventMouseMotion:
+		_update_hover(cell_at_mouse())
+
+
+## Hovering a shoot target shows the chance and the cover it is computed
+## from, straight from the ruleset so the readout cannot drift from the roll.
+func _update_hover(cell: Vector2i) -> void:
+	var lines: Array[String] = []
+	if _human != null and _human.is_waiting() and not _selected.is_empty() and cell.x >= 0:
+		var state := _runner.state
+		var shooter := state.unit(_selected)
+		var target := state.unit_at(cell)
+		for action: BattleAction in ActionTargets.matches_at(state, _choices, _selected, cell):
+			if action.kind == "shoot" and target != null and shooter != null:
+				var rules := state.ruleset as BreachRuleset
+				lines.append("%d%% to hit" % rules.hit_chance(state, shooter, target))
+				lines.append(ShootRule.cover_label(rules.cover_toward(state, target, shooter.cell), bool(target.custom.get("hunker", false))))
+				break
+	_overlay.set_hover(cell, lines)
 
 
 func _handle_click(cell: Vector2i) -> void:
@@ -220,6 +239,7 @@ func _submit(action: BattleAction) -> void:
 	var none: Array[String] = []
 	_overlay.ringed = none
 	_overlay.selected = ""
+	_overlay.set_hover(Vector2i(-1, -1), none)
 	_clear_highlights()
 	_clear_action_bar()
 	_human.submit(action)
@@ -296,3 +316,21 @@ func human() -> HumanController:
 func submit_from_harness(action: BattleAction) -> void:
 	if _human != null and _human.is_waiting():
 		_submit(action)
+
+
+## Select a unit the way a click on it would, for scenarios.
+func select_from_harness(unit_id: String) -> void:
+	if _human == null or not _human.is_waiting():
+		return
+	var unit := _runner.state.unit(unit_id)
+	if unit != null:
+		_handle_click(unit.cell)
+
+
+## Hover a cell the way mouse motion would, for scenarios.
+func hover_from_harness(cell: Vector2i) -> void:
+	_update_hover(cell)
+
+
+func hover_lines() -> Array[String]:
+	return _overlay.hover_lines()

@@ -1,0 +1,28 @@
+{
+  "battle_id": "breach_readout",
+  "ruleset": "res://examples/breach/breach_ruleset.gd",
+  "topology": "square8",
+  "map_scene": "res://examples/breach/map/warehouse_map.tscn",
+  "ground_layer": "Ground",
+  "overlay_layers": ["Cover"],
+  "data_layers": ["spawn"],
+  "terrain_legend": {
+    "floor":      {"id": "floor",      "glyph": ".", "move_cost": 1, "color": "#8a8f96"},
+    "rubble":     {"id": "rubble",     "glyph": ":", "move_cost": 2, "color": "#6f6358", "tags": ["rubble"]},
+    "wall":       {"id": "wall",       "glyph": "#", "passable": false, "color": "#2b2d33", "tags": ["wall", "blocks_los"]},
+    "half_cover": {"id": "half_cover", "glyph": "h", "move_cost": 1, "passable": false, "color": "#b89a5a", "tags": ["half_cover"]},
+    "full_cover": {"id": "full_cover", "glyph": "H", "move_cost": 1, "passable": false, "color": "#5d6a78", "tags": ["full_cover"]}
+  },
+  "unit_defs": {
+    "trooper": {"id": "trooper", "display_name": "Trooper", "max_hp": 6, "attack": 3, "defense": 0, "move": 5, "range_min": 1, "range_max": 8, "aim": 70, "tags": ["human"]},
+    "sectoid": {"id": "sectoid", "display_name": "Sectoid", "max_hp": 4, "attack": 2, "defense": 0, "move": 6, "range_min": 1, "range_max": 7, "aim": 65, "tags": ["alien"]}
+  },
+  "factions": [
+    {"id": "squad", "ai": "breach"},
+    {"id": "aliens", "ai": "breach"}
+  ],
+  "units": [
+    {"id": "s_trooper1", "faction": "squad", "def": "trooper", "cell": [10, 4]},
+    {"id": "a_sectoid1", "faction": "aliens", "def": "sectoid", "cell": [12, 5]}
+  ]
+}

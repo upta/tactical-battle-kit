@@ -35,6 +35,8 @@ func resolve(state: BattleState, engine: BattleEngine, attacker: BattleUnit, def
 		"defender_hp": defender.hp,
 		"hit": hit,
 		"chance": chance,
+		"cover": rules.cover_toward(state, defender, attacker.cell),
+		"hunkered": bool(defender.custom.get("hunker", false)),
 		"reaction": is_reaction(),
 	})
 	if defender.hp <= 0:
@@ -62,4 +64,10 @@ func describe(state: BattleState, action: BattleAction) -> String:
 	var target := state.unit(action.target_unit_id())
 	if shooter == null or target == null:
 		return "%s shoots" % action.unit_id
-	return "Shoot %s (%d%%)" % [target.def.display_name, (state.ruleset as BreachRuleset).hit_chance(state, shooter, target)]
+	var rules := state.ruleset as BreachRuleset
+	return "Shoot %s (%d%%, %s)" % [target.def.display_name, rules.hit_chance(state, shooter, target), cover_label(rules.cover_toward(state, target, shooter.cell), bool(target.custom.get("hunker", false)))]
+
+
+static func cover_label(cover: String, hunkered: bool) -> String:
+	var label := "no cover" if cover == "none" else "%s cover" % cover
+	return label + " + hunkered" if hunkered else label

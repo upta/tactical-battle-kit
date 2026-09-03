@@ -1,0 +1,57 @@
+{
+  "scenario_id": "breach_shot_readout",
+  "version": 4,
+  "description": "A trooper in range of a sectoid behind full cover. Selecting the trooper and hovering the sectoid shows the hit chance and the cover it is computed from (70 aim minus 40 for full cover = 30%); taking the shot emits an attacked event carrying the same chance and cover, and the incoming-shot readout draws it.",
+  "harness_scene": "res://validation/harnesses/breach_readout_harness.tscn",
+  "done_contract": {
+    "expected_chance": 30,
+    "expected_cover": "full",
+    "wait_frame_budget": 180
+  },
+  "artifact_contract": {
+    "required_files": [
+      "summary.json",
+      "event_log.json",
+      "scene_tree.json",
+      "console.log",
+      "screenshots/hover.png",
+      "screenshots/shot.png"
+    ],
+    "missing_file_is_failure": true
+  },
+  "exit_codes": {
+    "pass": 0,
+    "assertion_failure": 1,
+    "runtime_error": 2,
+    "timeout": 3,
+    "artifact_generation_error": 4
+  },
+  "cli_contract": {
+    "command_template": "godot --path <project> -- --test-mode --scenario <path> --artifacts <dir>"
+  },
+  "steps": [
+    {"op": "load_harness", "scene": "res://validation/harnesses/breach_readout_harness.tscn"},
+    {"op": "wait_frames", "frames": 5},
+    {"op": "press_action", "action": "sim_step"},
+    {"op": "wait_frames", "frames": 2},
+    {"op": "release_action", "action": "sim_step"},
+    {"op": "wait_until", "path": "harness_state.human_waiting", "comparator": "eq", "expected": true, "timeout_frames": 180},
+    {"op": "press_action", "action": "sim_play"},
+    {"op": "wait_frames", "frames": 2},
+    {"op": "release_action", "action": "sim_play"},
+    {"op": "wait_frames", "frames": 3},
+    {"op": "checkpoint", "name": "hover"},
+    {"op": "assert_value", "checkpoint": "hover", "path": "harness_state.hover_lines.0", "comparator": "eq", "expected": "30% to hit"},
+    {"op": "assert_value", "checkpoint": "hover", "path": "harness_state.hover_lines.1", "comparator": "eq", "expected": "full cover"},
+    {"op": "press_action", "action": "sim_submit"},
+    {"op": "wait_frames", "frames": 2},
+    {"op": "release_action", "action": "sim_submit"},
+    {"op": "wait_until", "path": "harness_state.submitted", "comparator": "eq", "expected": 1, "timeout_frames": 60},
+    {"op": "wait_frames", "frames": 30},
+    {"op": "checkpoint", "name": "shot"},
+    {"op": "assert_value", "checkpoint": "shot", "path": "harness_state.last_attack.chance", "comparator": "eq", "expected": 30},
+    {"op": "assert_value", "checkpoint": "shot", "path": "harness_state.last_attack.cover", "comparator": "eq", "expected": "full"},
+    {"op": "assert_value", "checkpoint": "shot", "path": "harness_state.hover_lines", "comparator": "eq", "expected": []},
+    {"op": "quit"}
+  ]
+}
