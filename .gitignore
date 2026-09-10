@@ -14,3 +14,6 @@
 /build/
 /.claude/skills/author-battle-ruleset
 /.claude/skills/run-balance-sim
+
+# The example game links the addon the same way (its own .gitignore covers the rest)
+/example-game/addons/tactical_battle_kit

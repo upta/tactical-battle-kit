@@ -8,8 +8,10 @@ description: "Use when: adding the tactical battle kit to a Godot project as a s
 ## Goal
 
 Get a consuming Godot 4.5+ GDScript project from nothing to a playable
-battle and a passing balance suite without editing the addon. Verified end
-to end on a fresh project on 2026-09-03; the traps below are the ones hit.
+battle and a passing balance suite without editing the addon. The finished result of these steps is
+`example-game/` in the kit repository, whose suites run in the kit's CI from
+that project on every push; copy its shape. The traps below are the ones a
+fresh project hits.
 
 ## Steps
 
@@ -43,7 +45,8 @@ godot --headless --path . --script res://addons/tactical_battle_kit/sim/sim_cli.
 
    Expect `RESULT {... "status":"pass" ...}` and exit 0. Re-import after
    adding scripts with `class_name` or new scenes. The kit's `simulate.ps1`
-   does the import for you; copy it and pass `-ProjectPath .`.
+   imports on every run for exactly that reason; copy it and pass
+   `-ProjectPath .`.
 6. In a scene, add a `BattleView` (debug) and a `BattleRunner` node; load
    the battle with `BattleLoader.load_file`, call `runner.setup(state)`, set
    `view.state`, and `await runner.step()` on a key press. Boot it headless

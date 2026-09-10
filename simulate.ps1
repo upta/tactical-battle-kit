@@ -11,6 +11,9 @@ param(
     [int]$Runs = 0,
     [int]$Seed = -1,
     [switch]$Trace,
+    # Skip the import pass. Only safe when no script with a class_name and no
+    # scene changed since the last import.
+    [switch]$SkipImport,
     [string]$GodotExe = $env:GODOT_EXE,
     # The Godot project to run in. Defaults to src/ (this repo's layout) or the
     # script's own directory when it holds project.godot, so a consumer can copy
@@ -47,9 +50,11 @@ if ($Suite) {
     }
 }
 
-# A cold .godot cache makes the first launch import assets; do it once up front
-# so suite output is not interleaved with import chatter.
-if (-not (Test-Path (Join-Path $project ".godot/imported"))) {
+# Import every time, not only on a cold cache: the class cache is what makes
+# a project's class_name declarations resolvable, and a suite that ran against
+# a stale cache fails with "Identifier not declared" on the class you just
+# added. It is seconds; -SkipImport is there for a tight inner loop.
+if (-not $SkipImport) {
     Start-Process -FilePath $GodotExe -ArgumentList "--headless", "--import", "--path", $project -Wait -WindowStyle Hidden | Out-Null
 }
 

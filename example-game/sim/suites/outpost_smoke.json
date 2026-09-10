@@ -1,0 +1,16 @@
+{
+  "suite_id": "outpost_smoke",
+  "description": "The outpost battle plays out with random AIs on both sides: units move and fight, nothing an AI picks is rejected, and games end. The smoke suite every new ruleset gets first.",
+  "battle": "res://battles/outpost.json",
+  "runs": 20,
+  "seed": 100,
+  "matchups": [
+    {"id": "random_mirror", "ai": {"garrison": "random", "raiders": "random"}}
+  ],
+  "assertions": [
+    {"metric": "metrics.events.rejected", "comparator": "eq", "expected": 0},
+    {"metric": "metrics.events.moved", "comparator": "gt", "expected": 10},
+    {"metric": "metrics.events.attacked", "comparator": "gt", "expected": 5},
+    {"metric": "draw_rate", "comparator": "lte", "expected": 0.5}
+  ]
+}

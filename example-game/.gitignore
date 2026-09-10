@@ -1,0 +1,8 @@
+# The addon is a symlink into the kit (symlink-config.txt at the repo root);
+# a real game would point it at its submodule instead.
+/addons/tactical_battle_kit
+/.godot/
+# Sim reports, regenerated every run; the committed .gdignore keeps Godot
+# from scanning them.
+/artifacts/*
+!/artifacts/.gdignore

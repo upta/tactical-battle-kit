@@ -16,3 +16,6 @@ tools=submodules/agentic_godot_validation/tools
 # Claude Code skills (this kit's own, exported for consumers under .github/skills)
 .claude/skills/author-battle-ruleset=.github/skills/author-battle-ruleset
 .claude/skills/run-balance-sim=.github/skills/run-balance-sim
+
+# The example game links the addon the way a consuming project would
+example-game/addons/tactical_battle_kit=src/addons/tactical_battle_kit

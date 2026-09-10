@@ -89,6 +89,12 @@ cannot be expressed as a cost; the pathfinder asks the ruleset before it
 offers a destination. Added during the battlefield build as a deviation
 from its proposal, which had claimed no kit change.
 
+**D17: `example-game/` is both the consumer fixture and the layout example.**
+Split them and one goes stale: an example nobody runs drifts, a fixture
+nobody reads fills with test-only hacks. So everything checked into it is
+what a real game would write; CI proves failure paths with throwaway
+suites it writes and deletes, never with a committed failing suite.
+
 ## Closed
 
 (none yet)

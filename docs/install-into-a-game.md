@@ -49,6 +49,15 @@ await $BattleRunner.step()
 4. Headless: `BattleSimulator.new().run(state, ais, BattleRng.new(seed))`, or
    a suite JSON and the sim CLI (`docs/write-a-sim-suite.md`).
 
+## The finished result
+
+`example-game/` in the kit repository is a consuming project laid out this
+way: `rules/outpost_ruleset.gd`, `ai/garrison_ai.gd` registered through
+`ai_scripts()`, `battles/outpost.json` naming both, and `sim/suites/` with a
+smoke suite and one that proves the game's own AI is the one playing. Its
+suites run in the kit's CI from that project, so the path above is exercised
+on every push. Copy its shape; nothing in it is test-only.
+
 ## Skills
 
 Copy or symlink `.github/skills/author-battle-ruleset` and

@@ -1,0 +1,15 @@
+{
+  "suite_id": "garrison_beats_random",
+  "description": "The game's own AI, registered through the ruleset's ai_scripts(), holds the outpost against random raiders. If the kit ever stops finding a game's classes from a consuming project, this is the suite that goes red.",
+  "battle": "res://battles/outpost.json",
+  "runs": 40,
+  "seed": 200,
+  "matchups": [
+    {"id": "garrison_vs_random", "ai": {"garrison": "garrison", "raiders": "random"}}
+  ],
+  "assertions": [
+    {"metric": "win_rate.garrison", "comparator": "gte", "expected": 0.8},
+    {"metric": "metrics.events.rejected", "comparator": "eq", "expected": 0},
+    {"metric": "custom.walls_held", "comparator": "gte", "expected": 1.0}
+  ]
+}

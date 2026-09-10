@@ -97,3 +97,50 @@ jobs:
           path: src/artifacts/sim/**/report.md
           if-no-files-found: ignore
 
+
+  example-game:
+    name: Example game suites
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.7.1
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Recreate symlinks
+        run: bash setup.sh
+
+      - name: Import assets
+        # A fresh project has no class cache; without this every kit
+        # class_name is undeclared and the CLI fails to parse.
+        run: godot --headless --import --path example-game > /tmp/import.log 2>&1 || (cat /tmp/import.log && exit 1)
+
+      - name: Run every suite from the consuming project
+        # The same loop as the kit's own job, run from a project that links
+        # the addon the way a game does. A kit change that breaks class
+        # registration or res:// resolution from a foreign root fails here.
+        run: |
+          fail=0
+          for suite in example-game/sim/suites/*.json; do
+            name=$(basename "$suite" .json)
+            echo "=== $name"
+            godot --headless --path example-game --script res://addons/tactical_battle_kit/sim/sim_cli.gd -- --suite "res://sim/suites/$name.json" > "/tmp/eg_$name.log" 2>&1
+            grep -E '^(RESULT|ARTIFACTS|FAILED) ' "/tmp/eg_$name.log" || true
+            if grep -qE '^(USER |SCRIPT )?ERROR:' "/tmp/eg_$name.log"; then
+              grep -E '^(USER |SCRIPT )?ERROR:' "/tmp/eg_$name.log" | head -5
+              fail=1
+            fi
+            code=$(grep -E '^RESULT ' "/tmp/eg_$name.log" | tail -1 | sed -E 's/.*"exit_code":([0-9]+).*/\1/')
+            if [ -z "$code" ] || [ "$code" != "0" ]; then fail=1; fi
+          done
+          exit $fail
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: example-game-reports
+          path: example-game/artifacts/sim/**/report.md
+          if-no-files-found: ignore

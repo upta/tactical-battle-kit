@@ -57,8 +57,9 @@ Stated once, here. Every command references it; none restate it.
 
 1. **Proof exists** for the change: a suite or scenario asserting the intended
    behavior, not just the happy path, and it was seen RED first.
-2. **Sim suites green**: `./simulate.ps1`, and you read the `report.md` tables
-   and said what they show.
+2. **Sim suites green**: `./simulate.ps1`, plus `./simulate.ps1 -ProjectPath
+   example-game` when the addon or the example game changed, and you read
+   the `report.md` tables and said what they show.
 3. **Scenario suite green with screenshots reviewed**: `./validate.ps1` when
    anything under `src/app`, the addon's `view/`, or `src/validation` changed;
    the six-point rubric is in the validate-gameplay skill.

@@ -1,0 +1,40 @@
+{
+  "battle_id": "outpost",
+  "ruleset": "res://rules/outpost_ruleset.gd",
+  "topology": "square",
+  "terrain_legend": {
+    ".": {"id": "field", "glyph": ".", "move_cost": 1, "defense_bonus": 0.0, "color": "#8fb35a"},
+    "w": {"id": "wall", "glyph": "w", "move_cost": 2, "defense_bonus": 0.3, "color": "#9a8c7a", "tags": ["cover"]},
+    "#": {"id": "rock", "glyph": "#", "passable": false, "color": "#4a4a4a"}
+  },
+  "map": [
+    "............",
+    "..#......#..",
+    "....wwww....",
+    "....w..w....",
+    "....w..w....",
+    "....wwww....",
+    "..#......#..",
+    "............"
+  ],
+  "unit_defs": {
+    "sentry": {"id": "sentry", "max_hp": 12, "attack": 5, "defense": 2, "move": 3, "range_min": 1, "range_max": 1},
+    "archer": {"id": "archer", "max_hp": 8, "attack": 4, "defense": 1, "move": 3, "range_min": 2, "range_max": 3},
+    "raider": {"id": "raider", "max_hp": 10, "attack": 5, "defense": 1, "move": 4, "range_min": 1, "range_max": 1}
+  },
+  "factions": [
+    {"id": "garrison", "ai": "garrison"},
+    {"id": "raiders", "ai": "random"}
+  ],
+  "units": [
+    {"id": "s1", "faction": "garrison", "def": "sentry", "cell": [5, 3]},
+    {"id": "s2", "faction": "garrison", "def": "sentry", "cell": [6, 4]},
+    {"id": "a1", "faction": "garrison", "def": "archer", "cell": [6, 3]},
+    {"id": "a2", "faction": "garrison", "def": "archer", "cell": [5, 4]},
+    {"id": "r1", "faction": "raiders", "def": "raider", "cell": [0, 0]},
+    {"id": "r2", "faction": "raiders", "def": "raider", "cell": [11, 0]},
+    {"id": "r3", "faction": "raiders", "def": "raider", "cell": [0, 7]},
+    {"id": "r4", "faction": "raiders", "def": "raider", "cell": [11, 7]},
+    {"id": "r5", "faction": "raiders", "def": "raider", "cell": [5, 0]}
+  ]
+}

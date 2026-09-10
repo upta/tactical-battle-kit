@@ -1,9 +1,15 @@
 # Todo
 
-No lane in flight. Phase 1 closed 2026-09-03: the human controller and the
-start-menu viewer, web deploys to R2 on every push, the TileMap-backed
-presentation contract with `TileMapGridSource`, `ActionTargets` and
-`apply_reaction`, and the breach example with hover and shot readouts.
+Phase 2 in flight: tasks/phase-2.md (the sim as a test framework for
+consuming games). Every task is major; each goes through the
+architecture-proposal gate at /build.
+
+- [x] Task 2.1: `example-game/`, fixture and layout example, run in CI
+      ✅ 2026-09-10 (two suites green from the foreign root; CI job `example-game`; simulate.ps1 now imports every run)
+- [ ] Task 2.2: `--suites <dir>`, SUMMARY line, suite-level `register`
+- [ ] Task 2.3: tournament block, standings and pairwise matrix
+- [ ] Task 2.4: baseline cell, deltas, ci95, `within ... of baseline`
+- [ ] Checkpoint 2: add a stat-bump suite to `example-game/` from the skill alone
 
 ## Unplayed, carried
 
@@ -13,9 +19,16 @@ presentation contract with `TileMapGridSource`, `ActionTargets` and
 
 ## Follow-ups
 
-- [ ] Consume the addon from a fresh project by following
-      `.github/skills/install-tactical-battle-kit` end to end; nothing has
-      exercised the install path outside this repo yet.
+- [ ] Grid sweeps (proposal item 3): `sweep` as a list, cross-product cells,
+      one report table per secondary axis. SPEC lists it as open.
+- [ ] Per-def usage metrics (proposal item 6): needs an `action_applied`
+      kit event so game-specific kinds are counted; then delete
+      `docs/balance-validation-proposal.md`.
+- [ ] Balance search CLI (proposal item 4): bisect one override path with
+      paired seeds until a metric lands within tolerance of a target. Needs
+      2.4's tolerance semantics first.
+- [ ] Parallel suites (proposal item 5): worker processes behind
+      `--suites`, verdicts still from the `RESULT` line (D11).
 - [ ] A fifth example with a charge-time scheduler, height as a grid layer,
       an oriented area pattern and a 2x2 footprint (FFT-style "plateau")
       would exercise the last seams no example touches.
