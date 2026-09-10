@@ -8,7 +8,8 @@ architecture-proposal gate at /build.
       ✅ 2026-09-10 (two suites green from the foreign root; CI job `example-game`; simulate.ps1 now imports every run)
 - [x] Task 2.2: `--suites <dir>`, SUMMARY line, suite-level `register`
       ✅ 2026-09-10 (one command per project; failure path proven in CI with a throwaway suite; rush AI registered from a pack)
-- [ ] Task 2.3: tournament block, standings and pairwise matrix
+- [x] Task 2.3: tournament block, standings and pairwise matrix
+      ✅ 2026-09-10 (round-robin over AIs × battles with side swap; found rush beats garrison 77% in the example game)
 - [ ] Task 2.4: baseline cell, deltas, ci95, `within ... of baseline`
 - [ ] Checkpoint 2: add a stat-bump suite to `example-game/` from the skill alone
 
@@ -20,6 +21,10 @@ architecture-proposal gate at /build.
 
 ## Follow-ups
 
+- [ ] Example game: the shipped garrison AI loses to the experimental rush
+      AI 77% of the time and never wins as the attacker (ai_tournament).
+      Decide whether the example should ship the better AI or keep the gap
+      as the thing the tournament table shows.
 - [ ] Grid sweeps (proposal item 3): `sweep` as a list, cross-product cells,
       one report table per secondary axis. SPEC lists it as open.
 - [ ] Per-def usage metrics (proposal item 6): needs an `action_applied`

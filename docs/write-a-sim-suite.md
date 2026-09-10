@@ -72,6 +72,46 @@ seed, winner, reason and rounds), `report.md` (the tables), `trace.json` when
 `latest.json` pointers per suite and overall. A `--suites` run also writes
 `<out>/summary.json` and `summary.md`: one row per suite and the verdict.
 
+## Tournaments
+
+Which AI is best, across maps and whichever side moves first: replace
+`battle` and `matchups` with a `tournament` block.
+
+```json
+{
+  "suite_id": "ai_tournament",
+  "runs": 30,
+  "seed": 400,
+  "register": ["res://ai/raider_pack.gd"],
+  "tournament": {
+    "ais": ["random", "garrison", "rush"],
+    "battles": ["res://battles/outpost.json"],
+    "swap_sides": true
+  },
+  "assertions": [
+    {"metric": "matrix.garrison.random", "comparator": "gte", "expected": 0.6},
+    {"metric": "standings.rush.games", "comparator": "eq", "expected": 120}
+  ]
+}
+```
+
+Every pair of AIs plays every listed battle, the first AI on the battle's
+first declared faction and the second on the second; `swap_sides` adds the
+reverse cell. Battles must have exactly two factions and are expected to
+share a ruleset the AIs understand. No mirror cells (a self-match says
+nothing about a ranking) and no duplicate ids: a variant of an AI is
+registered under its own id and listed as one. The report leads with a
+standings table sorted by points and a matrix of who beats whom, then the
+per-cell table. Assertions on `standings.<ai>.<field>` and `matrix.<a>.<b>`
+resolve against those tables; everything else resolves per cell as usual,
+and cells are named `<battle_id>:<first>_vs_<second>`.
+
+The standings are the answer; keep the assertions to what must hold for the
+table to mean anything (a known-bad AI stays at the bottom, nothing is
+rejected, every AI played the expected number of games). The example game's
+tournament found its experimental AI beating its shipped one, which is what
+the table is for.
+
 ## Sweeps
 
 One dotted path, a list of values, one cell per value per matchup. Roots:

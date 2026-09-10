@@ -25,6 +25,7 @@ header has the raw command; any CI runs that one line).
 | `register` | Script paths with a static `register()` that puts AIs into `AiRegistry`; for an AI the ruleset's `ai_scripts()` does not ship |
 | `matchups` | `[{id, ai: {faction: ai_id}}]`; omitted factions use the battle file's AI, else `random` |
 | `sweep` | `{path, values}`; one cell per value per matchup |
+| `tournament` | `{ais: [id...], battles: [path or dict...], swap_sides}`; replaces `battle` and `matchups` (and excludes `sweep`): every AI pair on every two-faction battle, reversed when `swap_sides`, no mirrors, no duplicate ids |
 | `assertions` | `[{metric, comparator, expected, matchup?, sweep_value?}]` |
 
 Override and sweep roots, all dotted paths:
@@ -57,6 +58,14 @@ table reads as 0 (no run ended by that reason); a missing table fails.
 
 Kit metrics are folded from the event log by `BattleSimulator.fold_metrics`;
 `custom` is the ruleset's `summarize(state)`, numeric leaves only, averaged.
+
+In a tournament, two more resolve once against the folded tables, not per
+cell: `standings.<ai>.{games,wins,draws,losses,win_rate,points}` (points =
+wins + draws / 2) and `matrix.<a>.<b>` (a's win rate over every game a and b
+played, both sides and all battles pooled). Cells are named
+`<battle_id>:<first>_vs_<second>`, so a per-cell assertion can still pick
+one with `matchup`. Run i of every cell uses the same seed, so a swapped
+pair differs only in who moved first.
 
 ## Writing a suite that has teeth
 

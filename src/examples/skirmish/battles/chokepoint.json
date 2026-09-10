@@ -1,0 +1,43 @@
+{
+  "battle_id": "chokepoint",
+  "ruleset": "res://examples/skirmish/skirmish_ruleset.gd",
+  "topology": "square",
+  "terrain_legend": {
+    ".": "res://examples/skirmish/data/terrain/plain.tres",
+    "f": "res://examples/skirmish/data/terrain/forest.tres",
+    "^": "res://examples/skirmish/data/terrain/hill.tres",
+    "#": "res://examples/skirmish/data/terrain/wall.tres"
+  },
+  "map": [
+    "......#.#.....",
+    "..ff..#.#..^..",
+    "......#.#.....",
+    ".....##.##....",
+    "..............",
+    ".....##.##....",
+    "..^...#.#..ff.",
+    "......#.#....."
+  ],
+  "unit_defs": {
+    "commander": "res://examples/skirmish/data/unit_defs/commander.tres",
+    "spearman": "res://examples/skirmish/data/unit_defs/spearman.tres",
+    "cavalry": "res://examples/skirmish/data/unit_defs/cavalry.tres",
+    "archer": "res://examples/skirmish/data/unit_defs/archer.tres"
+  },
+  "factions": [
+    {"id": "red", "ai": "greedy"},
+    {"id": "blue", "ai": "greedy"}
+  ],
+  "units": [
+    {"id": "r_cmd", "faction": "red", "def": "commander", "cell": [1, 4], "facing": 0},
+    {"id": "r_sp1", "faction": "red", "def": "spearman", "cell": [3, 3], "facing": 0, "custom": {"commander": "r_cmd"}},
+    {"id": "r_sp2", "faction": "red", "def": "spearman", "cell": [3, 5], "facing": 0, "custom": {"commander": "r_cmd"}},
+    {"id": "r_cav", "faction": "red", "def": "cavalry", "cell": [2, 2], "facing": 0, "custom": {"commander": "r_cmd"}},
+    {"id": "r_arc", "faction": "red", "def": "archer", "cell": [1, 6], "facing": 0, "custom": {"commander": "r_cmd"}},
+    {"id": "b_cmd", "faction": "blue", "def": "commander", "cell": [12, 3], "facing": 2},
+    {"id": "b_sp1", "faction": "blue", "def": "spearman", "cell": [10, 2], "facing": 2, "custom": {"commander": "b_cmd"}},
+    {"id": "b_sp2", "faction": "blue", "def": "spearman", "cell": [10, 4], "facing": 2, "custom": {"commander": "b_cmd"}},
+    {"id": "b_cav", "faction": "blue", "def": "cavalry", "cell": [11, 5], "facing": 2, "custom": {"commander": "b_cmd"}},
+    {"id": "b_arc", "faction": "blue", "def": "archer", "cell": [12, 1], "facing": 2, "custom": {"commander": "b_cmd"}}
+  ]
+}

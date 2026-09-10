@@ -11,12 +11,15 @@ extends RefCounted
 ##   register [script paths with a static register()],
 ##   overrides {battle|ruleset|unit_defs|terrain_defs: ...},
 ##   matchups [{id, ai: {faction: ai_id}}],
+##   tournament {ais: [...], battles: [...], swap_sides}  (replaces battle + matchups),
 ##   sweep {path: "unit_defs.cavalry.attack", values: [...]},
 ##   assertions [{metric, comparator, expected, matchup?, sweep_value?}]
 ##
 ## Metric paths resolve against a matchup aggregate: win_rate.<faction>,
 ## draw_rate, mean_rounds, min_rounds, max_rounds, mean_decisions,
-## reason.<reason>, metrics.<...>, custom.<...>.
+## reason.<reason>, metrics.<...>, custom.<...>. In a tournament,
+## standings.<ai>.<field> and matrix.<a>.<b> resolve once against the
+## folded tables.
 
 const EXIT_PASS := 0
 const EXIT_ASSERTION_FAILURE := 1
@@ -57,16 +60,26 @@ func run(suite: Dictionary) -> Dictionary:
 		if not problem.is_empty():
 			return _fail_runtime(report, problem, started)
 
-	var battle_data := _resolve_battle(suite)
-	if battle_data.is_empty():
-		return _fail_runtime(report, "Suite '%s' has no loadable battle." % suite_id, started)
+	var matchups: Array[Dictionary] = []
+	if suite.has("tournament"):
+		var expansion := expand_tournament(suite)
+		if expansion.has("error"):
+			return _fail_runtime(report, str(expansion["error"]), started)
+		matchups = expansion["cells"]
+		report["battle"] = expansion["battles"]
+		report["tournament"] = suite["tournament"]
+	else:
+		var battle_data := _resolve_battle(suite.get("battle"))
+		if battle_data.is_empty():
+			return _fail_runtime(report, "Suite '%s' has no loadable battle." % suite_id, started)
+		matchups = _resolve_matchups(suite, battle_data)
 
 	var base_overrides := normalize_overrides(suite.get("overrides", {}))
-	var matchups := _resolve_matchups(suite, battle_data)
 	var sweep_points := _resolve_sweep(suite)
 	var trace_kept := false
 
 	for matchup: Dictionary in matchups:
+		var battle_data: Dictionary = matchup["battle"]
 		for point: Dictionary in sweep_points:
 			var overrides: Dictionary = BattleLoader.deep_merge(base_overrides, point["overrides"])
 			var results: Array[Dictionary] = []
@@ -99,13 +112,21 @@ func run(suite: Dictionary) -> Dictionary:
 					trace_kept = true
 				results.append(result)
 			var aggregate := aggregate_results(results, state_factions(battle_data))
-			report["matchups"].append({
+			var cell := {
 				"id": matchup["id"],
 				"ai": matchup["ai"],
 				"sweep_value": point["value"],
 				"aggregate": aggregate,
 				"runs": _run_summaries(results),
-			})
+			}
+			if matchup.has("tournament"):
+				cell["tournament"] = matchup["tournament"]
+			report["matchups"].append(cell)
+
+	if report.has("tournament"):
+		var standings := fold_standings(report["matchups"])
+		report["standings"] = standings["standings"]
+		report["matrix"] = standings["matrix"]
 
 	_evaluate_assertions(suite, report)
 	report["duration_msec"] = Time.get_ticks_msec() - started
@@ -156,13 +177,114 @@ static func normalize_overrides(raw: Dictionary) -> Dictionary:
 	return result
 
 
-func _resolve_battle(suite: Dictionary) -> Dictionary:
-	var battle: Variant = suite.get("battle")
+static func _resolve_battle(battle: Variant) -> Dictionary:
 	if battle is Dictionary:
 		return battle
 	if battle is String:
 		return BattleLoader.read_json(str(battle))
 	return {}
+
+
+## Expand a tournament block into matchups: every unordered AI pair on every
+## battle, the first AI on the battle's first declared faction; swap_sides
+## adds the reverse. No mirrors (a self-match says nothing about a ranking)
+## and no duplicate ids (a variant of an AI registers under its own id).
+## Returns {cells, battles} or {error}.
+static func expand_tournament(suite: Dictionary) -> Dictionary:
+	if suite.has("battle") or suite.has("matchups"):
+		return {"error": "A tournament replaces 'battle' and 'matchups'; remove them from the suite."}
+	if suite.has("sweep"):
+		return {"error": "A tournament cannot be swept in the same suite; standings need one table per sweep value."}
+	var block: Dictionary = suite["tournament"]
+	var ais: Array[String] = []
+	for entry: Variant in block.get("ais", []):
+		var ai_id := str(entry)
+		if ais.has(ai_id):
+			return {"error": "Tournament lists AI '%s' twice." % ai_id}
+		ais.append(ai_id)
+	if ais.size() < 2:
+		return {"error": "A tournament needs at least two AIs."}
+	var battles: Array = block.get("battles", [])
+	if battles.is_empty():
+		return {"error": "A tournament needs at least one battle."}
+	var swap := bool(block.get("swap_sides", true))
+
+	var cells: Array[Dictionary] = []
+	var battle_ids: Array[String] = []
+	for entry: Variant in battles:
+		var battle_data := _resolve_battle(entry)
+		if battle_data.is_empty():
+			return {"error": "Tournament battle did not load: %s" % str(entry)}
+		var factions := state_factions(battle_data)
+		var battle_id := str(battle_data.get("battle_id", entry))
+		if factions.size() != 2:
+			return {"error": "Tournament battle '%s' has %d factions; a round-robin needs exactly two." % [battle_id, factions.size()]}
+		battle_ids.append(battle_id)
+		for a: int in ais.size():
+			for b: int in range(a + 1, ais.size()):
+				cells.append(_tournament_cell(battle_data, battle_id, factions, ais[a], ais[b]))
+				if swap:
+					cells.append(_tournament_cell(battle_data, battle_id, factions, ais[b], ais[a]))
+	return {"cells": cells, "battles": battle_ids}
+
+
+static func _tournament_cell(battle_data: Dictionary, battle_id: String, factions: Array[String], first: String, second: String) -> Dictionary:
+	return {
+		"id": "%s:%s_vs_%s" % [battle_id, first, second],
+		"ai": {factions[0]: first, factions[1]: second},
+		"battle": battle_data,
+		"tournament": {"battle": battle_id, "first": first, "second": second},
+	}
+
+
+## Per-AI standings and the pairwise matrix, folded from each cell's run
+## list so counts are exact. points = wins + draws / 2; matrix[a][b] is a's
+## win rate over every game a and b played, both sides and all battles.
+static func fold_standings(cells: Array) -> Dictionary:
+	var standings := {}
+	var pair_wins := {}
+	var pair_games := {}
+	for cell: Dictionary in cells:
+		if not cell.has("tournament"):
+			continue
+		var info: Dictionary = cell["tournament"]
+		var first := str(info["first"])
+		var second := str(info["second"])
+		var ai_map: Dictionary = cell["ai"]
+		var faction_of := {}
+		for faction: String in ai_map.keys():
+			faction_of[str(ai_map[faction])] = faction
+		for ai_id: String in [first, second]:
+			if not standings.has(ai_id):
+				standings[ai_id] = {"games": 0, "wins": 0, "draws": 0, "losses": 0}
+			if not pair_wins.has(ai_id):
+				pair_wins[ai_id] = {}
+				pair_games[ai_id] = {}
+		for run: Dictionary in cell["runs"]:
+			var winner := str(run["winner"])
+			for ai_id: String in [first, second]:
+				var other := second if ai_id == first else first
+				var row: Dictionary = standings[ai_id]
+				row["games"] += 1
+				pair_games[ai_id][other] = int(pair_games[ai_id].get(other, 0)) + 1
+				if winner.is_empty():
+					row["draws"] += 1
+				elif winner == str(faction_of[ai_id]):
+					row["wins"] += 1
+					pair_wins[ai_id][other] = int(pair_wins[ai_id].get(other, 0)) + 1
+				else:
+					row["losses"] += 1
+	for ai_id: String in standings.keys():
+		var row: Dictionary = standings[ai_id]
+		var games := int(row["games"])
+		row["win_rate"] = float(row["wins"]) / float(maxi(games, 1))
+		row["points"] = float(row["wins"]) + float(row["draws"]) * 0.5
+	var matrix := {}
+	for ai_id: String in pair_games.keys():
+		matrix[ai_id] = {}
+		for other: String in pair_games[ai_id].keys():
+			matrix[ai_id][other] = float(pair_wins[ai_id].get(other, 0)) / float(maxi(int(pair_games[ai_id][other]), 1))
+	return {"standings": standings, "matrix": matrix}
 
 
 static func state_factions(battle_data: Dictionary) -> Array[String]:
@@ -180,13 +302,13 @@ static func state_factions(battle_data: Dictionary) -> Array[String]:
 func _resolve_matchups(suite: Dictionary, battle_data: Dictionary) -> Array[Dictionary]:
 	var matchups: Array[Dictionary] = []
 	for entry: Dictionary in suite.get("matchups", []):
-		matchups.append({"id": str(entry.get("id", "matchup_%d" % matchups.size())), "ai": entry.get("ai", {})})
+		matchups.append({"id": str(entry.get("id", "matchup_%d" % matchups.size())), "ai": entry.get("ai", {}), "battle": battle_data})
 	if matchups.is_empty():
 		var ai := {}
 		for entry: Variant in battle_data.get("factions", []):
 			if entry is Dictionary and entry.has("ai"):
 				ai[str(entry["id"])] = str(entry["ai"])
-		matchups.append({"id": "default", "ai": ai})
+		matchups.append({"id": "default", "ai": ai, "battle": battle_data})
 	return matchups
 
 
@@ -300,6 +422,15 @@ func _evaluate_assertions(suite: Dictionary, report: Dictionary) -> void:
 		var metric := str(assertion.get("metric", ""))
 		var comparator := str(assertion.get("comparator", "eq"))
 		var expected: Variant = assertion.get("expected")
+		if metric.begins_with("standings.") or metric.begins_with("matrix."):
+			var tables := {"standings": report.get("standings", {}), "matrix": report.get("matrix", {})}
+			var actual: Variant = resolve_metric(tables, metric)
+			var passed := actual != null and compare(actual, comparator, expected)
+			var verification := {"metric": metric, "comparator": comparator, "expected": expected, "actual": actual, "matchup": "tournament", "sweep_value": null, "passed": passed}
+			report["verifications"].append(verification)
+			if not passed:
+				report["failed"].append(verification)
+			continue
 		var matched_any := false
 		for matchup: Dictionary in report["matchups"]:
 			if assertion.has("matchup") and str(assertion["matchup"]) != str(matchup["id"]):

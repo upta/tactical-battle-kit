@@ -129,6 +129,9 @@ static func to_markdown(report: Dictionary) -> String:
 	])
 	lines.append("")
 
+	if report.has("standings"):
+		lines.append_array(_tournament_tables(report))
+
 	var matchups: Array = report.get("matchups", [])
 	if not matchups.is_empty():
 		var factions: Array = (matchups[0]["aggregate"]["win_rate"] as Dictionary).keys()
@@ -190,6 +193,40 @@ static func to_markdown(report: Dictionary) -> String:
 			lines.append("- " + error)
 		lines.append("")
 	return "\n".join(lines)
+
+
+## Standings sorted by points, then the matrix: a row's AI beat the column's
+## AI this often, both sides and every battle pooled.
+static func _tournament_tables(report: Dictionary) -> Array[String]:
+	var lines: Array[String] = []
+	var standings: Dictionary = report["standings"]
+	var matrix: Dictionary = report.get("matrix", {})
+	var ids: Array = standings.keys()
+	ids.sort_custom(func(a: String, b: String) -> bool: return float(standings[a]["points"]) > float(standings[b]["points"]))
+	var battles: Array = report.get("battle", []) if report.get("battle") is Array else [report.get("battle")]
+	lines.append("## Standings")
+	lines.append("")
+	lines.append("Battles: " + ", ".join(battles.map(func(b: Variant) -> String: return str(b))) + " · sides swapped: " + str(bool((report.get("tournament", {}) as Dictionary).get("swap_sides", true))))
+	lines.append("")
+	lines.append("| AI | Games | W | D | L | Win rate | Points |")
+	lines.append("| --- | --- | --- | --- | --- | --- | --- |")
+	for ai_id: String in ids:
+		var row: Dictionary = standings[ai_id]
+		lines.append("| %s | %d | %d | %d | %d | %.0f%% | %.1f |" % [
+			ai_id, int(row["games"]), int(row["wins"]), int(row["draws"]), int(row["losses"]),
+			float(row["win_rate"]) * 100.0, float(row["points"]),
+		])
+	lines.append("")
+	lines.append("| beats → | " + " | ".join(ids) + " |")
+	lines.append("| --- | " + " | ".join(ids.map(func(_i: String) -> String: return "---")) + " |")
+	for a: String in ids:
+		var cells: Array[String] = []
+		for b: String in ids:
+			var row: Dictionary = matrix.get(a, {})
+			cells.append("-" if a == b or not row.has(b) else "%.0f%%" % (float(row[b]) * 100.0))
+		lines.append("| %s | %s |" % [a, " | ".join(cells)])
+	lines.append("")
+	return lines
 
 
 static func _format_rates(rates: Dictionary) -> String:
