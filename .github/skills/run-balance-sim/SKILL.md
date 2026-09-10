@@ -26,6 +26,8 @@ header has the raw command; any CI runs that one line).
 | `matchups` | `[{id, ai: {faction: ai_id}}]`; omitted factions use the battle file's AI, else `random` |
 | `sweep` | `{path, values}`; one cell per value per matchup |
 | `tournament` | `{ais: [id...], battles: [path or dict...], swap_sides}`; replaces `battle` and `matchups` (and excludes `sweep`): every AI pair on every two-faction battle, reversed when `swap_sides`, no mirrors, no duplicate ids |
+| `baseline` | `{sweep_value: v}` and/or `{matchup: id}`: the cell every other cell is compared to (same matchup at that value, that matchup at the same value, or the one fixed cell). Non-baseline cells gain a `delta` tree |
+| `assertions` (relative) | `{metric, within: x, of: "baseline", matchup?, sweep_value?}`: passes when the cell's delta from its baseline is within ±x; needs `baseline` |
 | `assertions` | `[{metric, comparator, expected, matchup?, sweep_value?}]` |
 
 Override and sweep roots, all dotted paths:
@@ -58,6 +60,11 @@ table reads as 0 (no run ended by that reason); a missing table fails.
 
 Kit metrics are folded from the event log by `BattleSimulator.fold_metrics`;
 `custom` is the ruleset's `summarize(state)`, numeric leaves only, averaged.
+
+`ci95.<any path above except min/max_rounds>` is the 95% half-width of that
+number: Wilson for rates (not zero at 0% or 100%), 1.96 standard errors for
+means. Reports print rates as `62% ±9`. A delta smaller than the intervals
+beside it is noise; at 30 runs a win rate is about ±17, at 120 about ±9.
 
 In a tournament, two more resolve once against the folded tables, not per
 cell: `standings.<ai>.{games,wins,draws,losses,win_rate,points}` (points =

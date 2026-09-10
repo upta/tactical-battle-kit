@@ -141,22 +141,27 @@ static func to_markdown(report: Dictionary) -> String:
 		lines.append(divider)
 		for matchup: Dictionary in matchups:
 			var aggregate: Dictionary = matchup["aggregate"]
+			var ci: Dictionary = aggregate.get("ci95", {})
 			var cells: Array[String] = []
-			cells.append(str(matchup["id"]))
+			cells.append(str(matchup["id"]) + (" (baseline)" if bool(matchup.get("baseline", false)) else ""))
 			cells.append(str(matchup["sweep_value"]) if matchup["sweep_value"] != null else "-")
 			for faction: String in factions:
-				cells.append("%.0f%%" % (float(aggregate["win_rate"].get(faction, 0.0)) * 100.0))
-			cells.append("%.0f%%" % (float(aggregate["draw_rate"]) * 100.0))
+				cells.append(_rate_with_ci(float(aggregate["win_rate"].get(faction, 0.0)), ci.get("win_rate", {}).get(faction)))
+			cells.append(_rate_with_ci(float(aggregate["draw_rate"]), ci.get("draw_rate")))
 			cells.append("%d / %.1f / %d" % [int(aggregate["min_rounds"]), float(aggregate["mean_rounds"]), int(aggregate["max_rounds"])])
 			cells.append("%.0f" % float(aggregate["mean_decisions"]))
 			lines.append("| " + " | ".join(cells) + " |")
 		lines.append("")
+		if matchups.any(func(m: Dictionary) -> bool: return m.has("delta")):
+			lines.append_array(_delta_table(matchups, factions))
 
 		for matchup: Dictionary in matchups:
 			var aggregate: Dictionary = matchup["aggregate"]
 			var label := str(matchup["id"]) + ("" if matchup["sweep_value"] == null else " @ " + str(matchup["sweep_value"]))
 			lines.append("## %s" % label)
 			lines.append("")
+			if matchup.has("delta"):
+				lines.append("- vs baseline: " + _format_delta_leaves(matchup["delta"]))
 			lines.append("- End reasons: " + _format_rates(aggregate.get("reason", {})))
 			var faction_metrics: Dictionary = aggregate["metrics"].get("faction", {})
 			for faction: String in faction_metrics.keys():
@@ -227,6 +232,63 @@ static func _tournament_tables(report: Dictionary) -> Array[String]:
 		lines.append("| %s | %s |" % [a, " | ".join(cells)])
 	lines.append("")
 	return lines
+
+
+static func _rate_with_ci(rate: float, half_width: Variant) -> String:
+	if half_width == null:
+		return "%.0f%%" % (rate * 100.0)
+	return "%.0f%% ±%.0f" % [rate * 100.0, float(half_width) * 100.0]
+
+
+## One row per non-baseline cell: signed differences from its baseline for
+## the headline numbers. The intervals beside the raw numbers above say
+## whether a delta clears the noise.
+static func _delta_table(matchups: Array, factions: Array) -> Array[String]:
+	var lines: Array[String] = []
+	lines.append("## Deltas vs baseline")
+	lines.append("")
+	lines.append("| Matchup | Sweep | " + " | ".join(factions.map(func(f: String) -> String: return "Δ win " + f)) + " | Δ draw | Δ rounds | Δ decisions |")
+	lines.append("| --- | --- | " + " | ".join(factions.map(func(_f: String) -> String: return "---")) + " | --- | --- | --- |")
+	for matchup: Dictionary in matchups:
+		if not matchup.has("delta"):
+			continue
+		var delta: Dictionary = matchup["delta"]
+		var cells: Array[String] = []
+		cells.append(str(matchup["id"]))
+		cells.append(str(matchup["sweep_value"]) if matchup["sweep_value"] != null else "-")
+		for faction: String in factions:
+			cells.append(_signed_points(delta.get("win_rate", {}).get(faction)))
+		cells.append(_signed_points(delta.get("draw_rate")))
+		cells.append(_signed(delta.get("mean_rounds")))
+		cells.append(_signed(delta.get("mean_decisions")))
+		lines.append("| " + " | ".join(cells) + " |")
+	lines.append("")
+	return lines
+
+
+static func _signed_points(value: Variant) -> String:
+	return "-" if value == null else "%+.0f pts" % (float(value) * 100.0)
+
+
+static func _signed(value: Variant) -> String:
+	return "-" if value == null else "%+.1f" % float(value)
+
+
+## The custom and per-faction metric deltas, flattened to "path +x". Def
+## and event deltas stay in report.json; here they would drown the line.
+static func _format_delta_leaves(delta: Dictionary) -> String:
+	var parts: Array[String] = []
+	_flatten_delta(delta.get("custom", {}), "custom", parts)
+	_flatten_delta((delta.get("metrics", {}) as Dictionary).get("faction", {}), "faction", parts)
+	return ", ".join(parts) if not parts.is_empty() else "no metric leaves in common"
+
+
+static func _flatten_delta(value: Variant, prefix: String, parts: Array[String]) -> void:
+	if value is Dictionary:
+		for key: Variant in value.keys():
+			_flatten_delta(value[key], prefix + "." + str(key), parts)
+	elif value is float and not is_zero_approx(float(value)):
+		parts.append("%s %+.2f" % [prefix, float(value)])
 
 
 static func _format_rates(rates: Dictionary) -> String:

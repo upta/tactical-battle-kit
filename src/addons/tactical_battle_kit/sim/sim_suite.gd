@@ -13,13 +13,16 @@ extends RefCounted
 ##   matchups [{id, ai: {faction: ai_id}}],
 ##   tournament {ais: [...], battles: [...], swap_sides}  (replaces battle + matchups),
 ##   sweep {path: "unit_defs.cavalry.attack", values: [...]},
-##   assertions [{metric, comparator, expected, matchup?, sweep_value?}]
+##   baseline {sweep_value?, matchup?}  (the cell every other cell is compared to),
+##   assertions [{metric, comparator, expected, matchup?, sweep_value?}
+##               | {metric, within, of: "baseline", matchup?, sweep_value?}]
 ##
 ## Metric paths resolve against a matchup aggregate: win_rate.<faction>,
 ## draw_rate, mean_rounds, min_rounds, max_rounds, mean_decisions,
-## reason.<reason>, metrics.<...>, custom.<...>. In a tournament,
-## standings.<ai>.<field> and matrix.<a>.<b> resolve once against the
-## folded tables.
+## reason.<reason>, metrics.<...>, custom.<...>, and ci95.<any of those>
+## for the 95% half-width. In a tournament, standings.<ai>.<field> and
+## matrix.<a>.<b> resolve once against the folded tables. A "within"
+## assertion resolves against the cell's delta from its baseline.
 
 const EXIT_PASS := 0
 const EXIT_ASSERTION_FAILURE := 1
@@ -127,6 +130,14 @@ func run(suite: Dictionary) -> Dictionary:
 		var standings := fold_standings(report["matchups"])
 		report["standings"] = standings["standings"]
 		report["matrix"] = standings["matrix"]
+
+	if suite.has("baseline"):
+		if not (suite["baseline"] is Dictionary):
+			return _fail_runtime(report, "'baseline' must be {\"sweep_value\": v} and/or {\"matchup\": id}.", started)
+		report["baseline"] = suite["baseline"]
+		var problem := apply_baseline(suite["baseline"], report["matchups"])
+		if not problem.is_empty():
+			return _fail_runtime(report, problem, started)
 
 	_evaluate_assertions(suite, report)
 	report["duration_msec"] = Time.get_ticks_msec() - started
@@ -353,8 +364,12 @@ static func aggregate_results(results: Array[Dictionary], factions: Array[String
 	var max_rounds := 0
 	for faction: String in factions:
 		wins[faction] = 0
+	var rounds_squares := 0
+	var decisions_squares := 0
 	var metric_sums := {}
+	var metric_squares := {}
 	var custom_sums := {}
+	var custom_squares := {}
 	for result: Dictionary in results:
 		var winner := str(result["winner"])
 		if winner.is_empty():
@@ -364,19 +379,26 @@ static func aggregate_results(results: Array[Dictionary], factions: Array[String
 		var reason := str(result["reason"])
 		reasons[reason] = int(reasons.get(reason, 0)) + 1
 		var rounds := int(result["rounds"])
+		var decisions := int(result["decisions"])
 		rounds_total += rounds
-		decisions_total += int(result["decisions"])
+		rounds_squares += rounds * rounds
+		decisions_total += decisions
+		decisions_squares += decisions * decisions
 		min_rounds = rounds if min_rounds < 0 else mini(min_rounds, rounds)
 		max_rounds = maxi(max_rounds, rounds)
-		_accumulate(metric_sums, result["metrics"])
-		_accumulate(custom_sums, result["custom"])
+		_accumulate(metric_sums, metric_squares, result["metrics"])
+		_accumulate(custom_sums, custom_squares, result["custom"])
 
 	var win_rate := {}
+	var win_ci := {}
 	for faction: String in wins.keys():
 		win_rate[faction] = float(wins[faction]) / float(maxi(count, 1))
+		win_ci[faction] = wilson_half_width(int(wins[faction]), count)
 	var reason_rate := {}
+	var reason_ci := {}
 	for reason: String in reasons.keys():
 		reason_rate[reason] = float(reasons[reason]) / float(maxi(count, 1))
+		reason_ci[reason] = wilson_half_width(int(reasons[reason]), count)
 	return {
 		"runs": count,
 		"win_rate": win_rate,
@@ -388,10 +410,44 @@ static func aggregate_results(results: Array[Dictionary], factions: Array[String
 		"reason": reason_rate,
 		"metrics": _divide(metric_sums, count),
 		"custom": _divide(custom_sums, count),
+		"ci95": {
+			"win_rate": win_ci,
+			"draw_rate": wilson_half_width(draws, count),
+			"mean_rounds": mean_half_width(float(rounds_total), float(rounds_squares), count),
+			"mean_decisions": mean_half_width(float(decisions_total), float(decisions_squares), count),
+			"reason": reason_ci,
+			"metrics": _half_widths(metric_sums, metric_squares, count),
+			"custom": _half_widths(custom_sums, custom_squares, count),
+		},
 	}
 
 
-static func _accumulate(sums: Dictionary, values: Variant) -> void:
+const Z95 := 1.959964
+
+
+## Half the width of the Wilson score interval for k successes in n trials.
+## Unlike the normal approximation it is not zero at 0% or 100%, which is
+## where a 30-run suite often sits.
+static func wilson_half_width(successes: int, n: int) -> float:
+	if n <= 0:
+		return 0.0
+	var p := float(successes) / float(n)
+	var z2 := Z95 * Z95
+	var denominator := 1.0 + z2 / float(n)
+	var spread := Z95 * sqrt(p * (1.0 - p) / float(n) + z2 / (4.0 * float(n) * float(n)))
+	return spread / denominator
+
+
+## 1.96 standard errors of a mean from its sum and sum of squares.
+static func mean_half_width(total: float, squares: float, n: int) -> float:
+	if n <= 1:
+		return 0.0
+	var mean := total / float(n)
+	var variance := maxf(squares / float(n) - mean * mean, 0.0) * float(n) / float(n - 1)
+	return Z95 * sqrt(variance / float(n))
+
+
+static func _accumulate(sums: Dictionary, squares: Dictionary, values: Variant) -> void:
 	if not (values is Dictionary):
 		return
 	for key: Variant in values.keys():
@@ -399,9 +455,11 @@ static func _accumulate(sums: Dictionary, values: Variant) -> void:
 		if value is Dictionary:
 			if not sums.has(key) or not (sums[key] is Dictionary):
 				sums[key] = {}
-			_accumulate(sums[key], value)
+				squares[key] = {}
+			_accumulate(sums[key], squares[key], value)
 		elif value is int or value is float or value is bool:
 			sums[key] = float(sums.get(key, 0.0)) + float(value)
+			squares[key] = float(squares.get(key, 0.0)) + float(value) * float(value)
 
 
 static func _divide(sums: Dictionary, count: int) -> Dictionary:
@@ -412,6 +470,76 @@ static func _divide(sums: Dictionary, count: int) -> Dictionary:
 		else:
 			result[key] = float(sums[key]) / float(maxi(count, 1))
 	return result
+
+
+static func _half_widths(sums: Dictionary, squares: Dictionary, count: int) -> Dictionary:
+	var result := {}
+	for key: Variant in sums.keys():
+		if sums[key] is Dictionary:
+			result[key] = _half_widths(sums[key], squares[key], count)
+		else:
+			result[key] = mean_half_width(float(sums[key]), float(squares[key]), count)
+	return result
+
+
+# --- Baseline ---
+
+
+## Pair every cell with its baseline and store the leaf-wise difference.
+## baseline is {sweep_value} (same matchup, that value), {matchup} (that
+## matchup, same sweep value) or both (one fixed cell). Returns "" or the
+## problem.
+static func apply_baseline(spec: Dictionary, cells: Array) -> String:
+	var by_key := {}
+	for cell: Dictionary in cells:
+		by_key[_cell_key(cell["id"], cell["sweep_value"])] = cell
+	var found := false
+	for cell: Dictionary in cells:
+		var matchup_id: String = str(spec["matchup"]) if spec.has("matchup") else str(cell["id"])
+		var sweep_value: Variant = spec["sweep_value"] if spec.has("sweep_value") else cell["sweep_value"]
+		var baseline: Variant = by_key.get(_cell_key(matchup_id, sweep_value))
+		if baseline == null:
+			continue
+		found = true
+		var is_baseline: bool = baseline == cell
+		cell["baseline"] = is_baseline
+		if not is_baseline:
+			cell["delta"] = _delta(cell["aggregate"], (baseline as Dictionary)["aggregate"])
+	if not found:
+		return "Baseline %s names no cell in this suite." % JSON.stringify(spec)
+	return ""
+
+
+static func _cell_key(matchup_id: String, sweep_value: Variant) -> String:
+	return "%s@%s" % [matchup_id, "" if sweep_value == null else str(sweep_value)]
+
+
+## Leaf-wise cell minus baseline for the paths ci95 covers; a leaf missing
+## on either side is skipped rather than read as zero.
+static func _delta(cell: Dictionary, baseline: Dictionary) -> Dictionary:
+	var result := {}
+	for key: Variant in ["win_rate", "draw_rate", "mean_rounds", "mean_decisions", "reason", "metrics", "custom"]:
+		if not cell.has(key) or not baseline.has(key):
+			continue
+		var diff: Variant = _delta_value(cell[key], baseline[key])
+		if diff != null:
+			result[key] = diff
+	return result
+
+
+static func _delta_value(a: Variant, b: Variant) -> Variant:
+	if a is Dictionary and b is Dictionary:
+		var result := {}
+		for key: Variant in a.keys():
+			if not b.has(key):
+				continue
+			var diff: Variant = _delta_value(a[key], b[key])
+			if diff != null:
+				result[key] = diff
+		return result
+	if _numeric(a) and _numeric(b):
+		return float(a) - float(b)
+	return null
 
 
 # --- Assertions ---
@@ -431,15 +559,32 @@ func _evaluate_assertions(suite: Dictionary, report: Dictionary) -> void:
 			if not passed:
 				report["failed"].append(verification)
 			continue
+		var relative := assertion.has("within")
+		if relative:
+			comparator = "within"
+			expected = assertion["within"]
+			if str(assertion.get("of", "baseline")) != "baseline" or not report.has("baseline"):
+				var bad := {"metric": metric, "comparator": comparator, "expected": expected, "actual": null, "matchup": assertion.get("matchup", "*"), "sweep_value": assertion.get("sweep_value"), "passed": false, "message": "'within' needs a suite 'baseline' and 'of': \"baseline\""}
+				report["verifications"].append(bad)
+				report["failed"].append(bad)
+				continue
 		var matched_any := false
 		for matchup: Dictionary in report["matchups"]:
 			if assertion.has("matchup") and str(assertion["matchup"]) != str(matchup["id"]):
 				continue
 			if assertion.has("sweep_value") and assertion["sweep_value"] != matchup["sweep_value"]:
 				continue
+			if relative and not matchup.has("delta"):
+				continue
 			matched_any = true
-			var actual: Variant = resolve_metric(matchup["aggregate"], metric)
-			var passed := actual != null and compare(actual, comparator, expected)
+			var actual: Variant
+			var passed: bool
+			if relative:
+				actual = resolve_metric(matchup["delta"], metric)
+				passed = actual != null and absf(float(actual)) <= float(expected)
+			else:
+				actual = resolve_metric(matchup["aggregate"], metric)
+				passed = actual != null and compare(actual, comparator, expected)
 			var verification := {
 				"metric": metric,
 				"comparator": comparator,

@@ -120,6 +120,43 @@ One dotted path, a list of values, one cell per value per matchup. Roots:
 dictionary, so army composition is sweepable too). Assertions without
 `sweep_value` apply to every cell.
 
+## Baselines and intervals
+
+Every rate and mean in a report carries a 95% interval (`62% ±9` in the
+tables, `ci95.<path>` in the JSON and in assertions). To make a stat change
+reviewable rather than eyeballed, name the current build as the baseline
+and assert on deltas:
+
+```json
+{
+  "suite_id": "raider_attack_baseline",
+  "battle": "res://battles/outpost.json",
+  "runs": 60,
+  "seed": 500,
+  "matchups": [{"id": "garrison_vs_rush", "ai": {"garrison": "garrison", "raiders": "rush"}}],
+  "sweep": {"path": "unit_defs.raider.attack", "values": [5, 6, 7]},
+  "baseline": {"sweep_value": 5},
+  "assertions": [
+    {"metric": "ci95.win_rate.garrison", "comparator": "lte", "expected": 0.15},
+    {"metric": "mean_rounds", "within": 3, "of": "baseline"}
+  ]
+}
+```
+
+`baseline` is `{sweep_value}` (each matchup compared to itself at that
+value), `{matchup}` (each sweep value compared to that matchup), or both
+(one fixed cell). Non-baseline cells get a `delta` tree with the same paths
+as the aggregate, a "Deltas vs baseline" table in the report, and a
+"vs baseline" line per cell for the custom and faction metrics. A `within`
+assertion passes when |delta| is at most `x`; it applies to non-baseline
+cells only and needs `of: "baseline"`.
+
+Read the delta against the intervals beside it: the example above found
+one attack point takes the garrison from 68% ±11 to 3% ±5, a breakpoint,
+while the pace of the fight barely moved. At 30 runs a win rate is about
+±17 points; at 120 about ±9. Raise `runs` until the interval is narrower
+than the effect you are looking for, not until the assertion passes.
+
 ## Reading a sweep
 
 The point of a sweep is the shape, not a pass. Read the matchup table across

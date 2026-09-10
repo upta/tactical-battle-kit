@@ -1,0 +1,18 @@
+{
+  "suite_id": "skirmish_cavalry_baseline",
+  "description": "Cavalry attack at its shipped value (the baseline) and one and two points higher, on the greedy mirror. Every number carries a 95% interval and every non-baseline cell a delta, so the question is whether a one-point buff moves the mirror or the pace by more than the noise, read from the deltas table rather than by eye.",
+  "battle": "res://examples/skirmish/battles/open_field.json",
+  "runs": 120,
+  "seed": 5000,
+  "matchups": [
+    {"id": "greedy_mirror", "ai": {"red": "greedy", "blue": "greedy"}}
+  ],
+  "sweep": {"path": "unit_defs.cavalry.attack", "values": [6, 7, 8]},
+  "baseline": {"sweep_value": 6},
+  "assertions": [
+    {"metric": "ci95.win_rate.red", "comparator": "lte", "expected": 0.12},
+    {"metric": "mean_rounds", "within": 4, "of": "baseline"},
+    {"metric": "win_rate.red", "sweep_value": 7, "within": 0.2, "of": "baseline"},
+    {"metric": "draw_rate", "comparator": "lte", "expected": 0.1}
+  ]
+}

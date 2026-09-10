@@ -67,7 +67,8 @@ if (-not $SkipImport) {
     Start-Process -FilePath $GodotExe -ArgumentList "--headless", "--import", "--path", $project -Wait -WindowStyle Hidden | Out-Null
 }
 
-$log = Join-Path $env:TEMP "sim_suites.log"
+# One log per project, so two projects (or two terminals) can run at once.
+$log = Join-Path $env:TEMP ("sim_suites_{0}.log" -f (Split-Path -Leaf $project))
 if (Test-Path $log) { Remove-Item $log }
 $args = @(
     "--headless", "--path", $project,

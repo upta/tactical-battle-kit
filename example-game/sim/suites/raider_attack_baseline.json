@@ -1,0 +1,18 @@
+{
+  "suite_id": "raider_attack_baseline",
+  "description": "If the raiders get one more point of attack, does the garrison still hold against the rush AI, and by how much less? Attack 5 is the shipped value and the baseline; 6 and 7 are the candidate buffs. Read the deltas table: a delta smaller than the intervals beside it is noise, and the assertions only pin that the intervals are tight enough to read and that the pace of a fight does not change.",
+  "battle": "res://battles/outpost.json",
+  "runs": 60,
+  "seed": 500,
+  "register": ["res://ai/raider_pack.gd"],
+  "matchups": [
+    {"id": "garrison_vs_rush", "ai": {"garrison": "garrison", "raiders": "rush"}}
+  ],
+  "sweep": {"path": "unit_defs.raider.attack", "values": [5, 6, 7]},
+  "baseline": {"sweep_value": 5},
+  "assertions": [
+    {"metric": "ci95.win_rate.garrison", "comparator": "lte", "expected": 0.15},
+    {"metric": "mean_rounds", "within": 3, "of": "baseline"},
+    {"metric": "metrics.events.rejected", "comparator": "eq", "expected": 0}
+  ]
+}

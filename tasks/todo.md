@@ -10,7 +10,8 @@ architecture-proposal gate at /build.
       ✅ 2026-09-10 (one command per project; failure path proven in CI with a throwaway suite; rush AI registered from a pack)
 - [x] Task 2.3: tournament block, standings and pairwise matrix
       ✅ 2026-09-10 (round-robin over AIs × battles with side swap; found rush beats garrison 77% in the example game)
-- [ ] Task 2.4: baseline cell, deltas, ci95, `within ... of baseline`
+- [x] Task 2.4: baseline cell, deltas, ci95, `within ... of baseline`
+      ✅ 2026-09-10 (Wilson and normal intervals on every aggregate; deltas table; one raider attack point flips the outpost 68% to 3%)
 - [ ] Checkpoint 2: add a stat-bump suite to `example-game/` from the skill alone
 
 ## Unplayed, carried
@@ -21,6 +22,14 @@ architecture-proposal gate at /build.
 
 ## Follow-ups
 
+- [ ] `skirmish_mirror_is_fair` passes by seed: red reads 31% ±8 at its own
+      seed and 20% ±7 at seed 5000 (cavalry baseline suite), so the 25%
+      floor is not supported by the numbers. Its description calls below
+      25% a rule problem; decide whether the first-mover penalty is the rule
+      or the greedy AI, then move the floor or fix the cause.
+- [ ] `rush_raiders_vs_garrison` reads 75% at seed 300 and 47% at seed 400
+      with ±15 intervals; its 0.5 floor holds only by seed. Raise runs or
+      loosen the claim.
 - [ ] Example game: the shipped garrison AI loses to the experimental rush
       AI 77% of the time and never wins as the attacker (ai_tournament).
       Decide whether the example should ship the better AI or keep the gap
