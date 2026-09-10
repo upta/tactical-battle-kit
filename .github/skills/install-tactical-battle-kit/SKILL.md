@@ -40,13 +40,14 @@ cmd /c "mklink /D addons\tactical_battle_kit ..\submodules\tactical_battle_kit\s
 
 ```powershell
 godot --headless --import --path .
-godot --headless --path . --script res://addons/tactical_battle_kit/sim/sim_cli.gd -- --suite res://sim/suites/first_smoke.json
+godot --headless --path . --script res://addons/tactical_battle_kit/sim/sim_cli.gd -- --suites res://sim/suites
 ```
 
-   Expect `RESULT {... "status":"pass" ...}` and exit 0. Re-import after
-   adding scripts with `class_name` or new scenes. The kit's `simulate.ps1`
-   imports on every run for exactly that reason; copy it and pass
-   `-ProjectPath .`.
+   Expect a `RESULT {... "status":"pass" ...}` line per suite, a `SUMMARY`
+   line, and exit 0; that second command is the whole test runner and is
+   what the project's CI runs. Re-import after adding scripts with
+   `class_name` or new scenes. The kit's `simulate.ps1` imports on every run
+   for exactly that reason; copy it and pass `-ProjectPath .`.
 6. In a scene, add a `BattleView` (debug) and a `BattleRunner` node; load
    the battle with `BattleLoader.load_file`, call `runner.setup(state)`, set
    `view.state`, and `await runner.step()` on a key press. Boot it headless

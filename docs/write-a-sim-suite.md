@@ -31,23 +31,46 @@ and reading guide are in `.github/skills/run-balance-sim/SKILL.md`.
 ./simulate.ps1 -Suite cavalry_is_not_dominant -Runs 1 -Seed 57 -Trace
 ```
 
-Or directly, from any project that has the addon:
+Or directly, from any project that has the addon; this is the whole test
+runner, and what a game's CI runs on any platform:
 
 ```
 godot --headless --path <project> --script res://addons/tactical_battle_kit/sim/sim_cli.gd -- \
-  --suite res://sim/suites/<name>.json [--out res://artifacts/sim] [--runs N] [--seed S] [--trace] \
-  [--register res://path/to/ai_pack.gd]
+  (--suite res://sim/suites/<name>.json | --suites res://sim/suites) \
+  [--out res://artifacts/sim] [--runs N] [--seed S] [--trace] [--register res://path/to/ai_pack.gd]
 ```
 
-Exit 0 pass, 1 assertion failure, 2 runtime error. The output has a `RESULT`
-JSON line, an `ARTIFACTS` line, and one `FAILED` line per failed assertion.
+`--suites` runs every `*.json` in the directory in name order, in one
+process. Exit 0 pass, 1 assertion failure, 2 runtime error, the worst across
+suites. Each suite prints a `RESULT` JSON line, an `ARTIFACTS` line, and one
+`FAILED` line per failed assertion; `--suites` ends with a `SUMMARY` JSON
+line. Trust the printed verdict over the process exit code: a missing
+`SUMMARY` means the engine died mid-run, which is a failure too.
+
+## Registering AIs
+
+A battle's ruleset registers its own AIs through `ai_scripts()`. An AI that
+is not part of the ruleset (an experimental opponent, a pack from another
+module) is named by a script with a static `register()`:
+
+```gdscript
+extends RefCounted
+
+static func register() -> void:
+	AiRegistry.register("rush", RushAi)
+```
+
+Either the suite lists it, `"register": ["res://ai/raider_pack.gd"]`, or the
+CLI gets `--register`. Registrations are process-wide, so a pack a suite
+loads is visible to every suite after it in a `--suites` run.
 
 ## What comes out
 
 `<out>/<suite_id>/<timestamp>/report.json` (everything, including each run's
 seed, winner, reason and rounds), `report.md` (the tables), `trace.json` when
 `--trace` was given (one run's full event log and final state), and
-`latest.json` pointers per suite and overall.
+`latest.json` pointers per suite and overall. A `--suites` run also writes
+`<out>/summary.json` and `summary.md`: one row per suite and the verdict.
 
 ## Sweeps
 

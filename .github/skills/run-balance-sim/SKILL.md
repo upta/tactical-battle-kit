@@ -8,8 +8,10 @@ description: Use when writing or reading a headless balance suite. Suite JSON sc
 A suite runs one battle N times per matchup with seeded AIs, optionally
 swept across values of one override path, and asserts on the aggregates.
 Runs headless, no window, in CI. Runner: `./simulate.ps1 [-Suite id] [-Runs n]
-[-Seed s] [-Trace]`. Engine entry point: `sim_cli.gd` (see its header for the
-raw command).
+[-Seed s] [-Trace] [-ProjectPath dir]`, a thin wrapper over the engine entry
+point `sim_cli.gd --suites <dir>`, which discovers, runs, prints a `RESULT`
+line per suite and a `SUMMARY` line, and writes `<out>/summary.md` (its
+header has the raw command; any CI runs that one line).
 
 ## Suite schema (`src/sim/suites/<suite_id>.json`)
 
@@ -20,6 +22,7 @@ raw command).
 | `battle` | Path to a battle JSON, or an inline battle dictionary |
 | `runs`, `seed` | Runs per cell (default 100) and base seed (default 1); run i uses `seed + i` |
 | `overrides` | Applied to every cell; roots below |
+| `register` | Script paths with a static `register()` that puts AIs into `AiRegistry`; for an AI the ruleset's `ai_scripts()` does not ship |
 | `matchups` | `[{id, ai: {faction: ai_id}}]`; omitted factions use the battle file's AI, else `random` |
 | `sweep` | `{path, values}`; one cell per value per matchup |
 | `assertions` | `[{metric, comparator, expected, matchup?, sweep_value?}]` |

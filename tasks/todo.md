@@ -6,7 +6,8 @@ architecture-proposal gate at /build.
 
 - [x] Task 2.1: `example-game/`, fixture and layout example, run in CI
       ✅ 2026-09-10 (two suites green from the foreign root; CI job `example-game`; simulate.ps1 now imports every run)
-- [ ] Task 2.2: `--suites <dir>`, SUMMARY line, suite-level `register`
+- [x] Task 2.2: `--suites <dir>`, SUMMARY line, suite-level `register`
+      ✅ 2026-09-10 (one command per project; failure path proven in CI with a throwaway suite; rush AI registered from a pack)
 - [ ] Task 2.3: tournament block, standings and pairwise matrix
 - [ ] Task 2.4: baseline cell, deltas, ci95, `within ... of baseline`
 - [ ] Checkpoint 2: add a stat-bump suite to `example-game/` from the skill alone

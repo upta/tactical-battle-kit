@@ -71,22 +71,18 @@ jobs:
         run: godot --headless --import --path src > /tmp/import.log 2>&1 || (cat /tmp/import.log && exit 1)
 
       - name: Run every suite
-        # Mirrors simulate.ps1: the RESULT line is the verdict; a missing
-        # RESULT line or an ERROR line in the log fails the suite.
+        # One command, same as simulate.ps1: the SUMMARY line is the verdict
+        # (D11); a missing SUMMARY line or an ERROR line in the log fails.
         run: |
+          godot --headless --path src --script res://addons/tactical_battle_kit/sim/sim_cli.gd -- --suites res://sim/suites > /tmp/sim.log 2>&1 || true
+          grep -E '^(RESULT|ARTIFACTS|FAILED|SUMMARY) ' /tmp/sim.log || true
           fail=0
-          for suite in src/sim/suites/*.json; do
-            name=$(basename "$suite" .json)
-            echo "=== $name"
-            godot --headless --path src --script res://addons/tactical_battle_kit/sim/sim_cli.gd -- --suite "res://sim/suites/$name.json" > "/tmp/sim_$name.log" 2>&1
-            grep -E '^(RESULT|ARTIFACTS|FAILED) ' "/tmp/sim_$name.log" || true
-            if grep -qE '^(USER |SCRIPT )?ERROR:' "/tmp/sim_$name.log"; then
-              grep -E '^(USER |SCRIPT )?ERROR:' "/tmp/sim_$name.log" | head -5
-              fail=1
-            fi
-            code=$(grep -E '^RESULT ' "/tmp/sim_$name.log" | tail -1 | sed -E 's/.*"exit_code":([0-9]+).*/\1/')
-            if [ -z "$code" ] || [ "$code" != "0" ]; then fail=1; fi
-          done
+          if grep -qE '^(USER |SCRIPT )?ERROR:' /tmp/sim.log; then
+            grep -E '^(USER |SCRIPT )?ERROR:' /tmp/sim.log | head -5
+            fail=1
+          fi
+          code=$(grep -E '^SUMMARY ' /tmp/sim.log | tail -1 | sed -E 's/.*"exit_code":([0-9]+).*/\1/')
+          if [ -z "$code" ] || [ "$code" != "0" ]; then fail=1; fi
           exit $fail
 
       - name: Upload reports
@@ -118,24 +114,37 @@ jobs:
         run: godot --headless --import --path example-game > /tmp/import.log 2>&1 || (cat /tmp/import.log && exit 1)
 
       - name: Run every suite from the consuming project
-        # The same loop as the kit's own job, run from a project that links
-        # the addon the way a game does. A kit change that breaks class
+        # The command a game's own CI runs, from a project that links the
+        # addon the way a game does. A kit change that breaks class
         # registration or res:// resolution from a foreign root fails here.
         run: |
+          godot --headless --path example-game --script res://addons/tactical_battle_kit/sim/sim_cli.gd -- --suites res://sim/suites > /tmp/eg.log 2>&1 || true
+          grep -E '^(RESULT|ARTIFACTS|FAILED|SUMMARY) ' /tmp/eg.log || true
           fail=0
-          for suite in example-game/sim/suites/*.json; do
-            name=$(basename "$suite" .json)
-            echo "=== $name"
-            godot --headless --path example-game --script res://addons/tactical_battle_kit/sim/sim_cli.gd -- --suite "res://sim/suites/$name.json" > "/tmp/eg_$name.log" 2>&1
-            grep -E '^(RESULT|ARTIFACTS|FAILED) ' "/tmp/eg_$name.log" || true
-            if grep -qE '^(USER |SCRIPT )?ERROR:' "/tmp/eg_$name.log"; then
-              grep -E '^(USER |SCRIPT )?ERROR:' "/tmp/eg_$name.log" | head -5
-              fail=1
-            fi
-            code=$(grep -E '^RESULT ' "/tmp/eg_$name.log" | tail -1 | sed -E 's/.*"exit_code":([0-9]+).*/\1/')
-            if [ -z "$code" ] || [ "$code" != "0" ]; then fail=1; fi
-          done
+          if grep -qE '^(USER |SCRIPT )?ERROR:' /tmp/eg.log; then
+            grep -E '^(USER |SCRIPT )?ERROR:' /tmp/eg.log | head -5
+            fail=1
+          fi
+          code=$(grep -E '^SUMMARY ' /tmp/eg.log | tail -1 | sed -E 's/.*"exit_code":([0-9]+).*/\1/')
+          if [ -z "$code" ] || [ "$code" != "0" ]; then fail=1; fi
           exit $fail
+
+      - name: Prove the failure path
+        # A throwaway suite that cannot pass, written and deleted here so
+        # nothing failing is ever checked in (D17). The runner must report
+        # exit 1 and name the suite; a runner that cannot fail proves nothing.
+        run: |
+          cat > example-game/sim/suites/zz_throwaway_must_fail.json <<'EOF'
+          {"suite_id": "zz_throwaway_must_fail", "battle": "res://battles/outpost.json", "runs": 5, "seed": 1,
+           "matchups": [{"id": "g", "ai": {"garrison": "garrison", "raiders": "random"}}],
+           "assertions": [{"metric": "win_rate.garrison", "comparator": "eq", "expected": 0}]}
+          EOF
+          godot --headless --path example-game --script res://addons/tactical_battle_kit/sim/sim_cli.gd -- --suites res://sim/suites > /tmp/eg_fail.log 2>&1 || true
+          rm example-game/sim/suites/zz_throwaway_must_fail.json
+          grep -E '^(FAILED|SUMMARY) ' /tmp/eg_fail.log || true
+          code=$(grep -E '^SUMMARY ' /tmp/eg_fail.log | tail -1 | sed -E 's/.*"exit_code":([0-9]+).*/\1/')
+          [ "$code" = "1" ] || { echo "Expected SUMMARY exit 1, got '$code'."; exit 1; }
+          grep -q '^FAILED win_rate.garrison g ' /tmp/eg_fail.log || { echo "No FAILED line for the throwaway suite."; exit 1; }
 
       - name: Upload reports
         if: always()

@@ -1,0 +1,15 @@
+{
+  "suite_id": "rush_raiders_vs_garrison",
+  "description": "An experimental raider AI that lives outside the ruleset, registered by the suite itself through an AI pack, rushes the outpost. The garrison should still hold more often than not, and nothing the rush AI picks is rejected.",
+  "battle": "res://battles/outpost.json",
+  "runs": 40,
+  "seed": 300,
+  "register": ["res://ai/raider_pack.gd"],
+  "matchups": [
+    {"id": "garrison_vs_rush", "ai": {"garrison": "garrison", "raiders": "rush"}}
+  ],
+  "assertions": [
+    {"metric": "metrics.events.rejected", "comparator": "eq", "expected": 0},
+    {"metric": "win_rate.garrison", "comparator": "gte", "expected": 0.5}
+  ]
+}

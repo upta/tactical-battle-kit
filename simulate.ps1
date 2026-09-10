@@ -6,6 +6,12 @@
 #   ./simulate.ps1 -Suite skirmish_mirror_is_fair
 #   ./simulate.ps1 -Runs 500 -Seed 7     # override the suite's counts
 #   ./simulate.ps1 -Suite x -Trace       # keep one run's full event log
+#   ./simulate.ps1 -ProjectPath example-game   # any project that has the addon
+#
+# This is a thin wrapper: sim_cli.gd --suites does the discovery, the runs and
+# the verdict, and prints a RESULT line per suite plus a SUMMARY line. This
+# script imports, launches once, and renders those lines. A Linux CI needs no
+# copy of it; the raw command is in sim_cli.gd's header.
 param(
     [string]$Suite = "",
     [int]$Runs = 0,
@@ -41,13 +47,16 @@ if (-not $ProjectPath) {
 $project = (Resolve-Path $ProjectPath).Path
 # PowerShell variables are case-insensitive: this must not be named $suiteDir.
 $suitePath = Join-Path $project $SuiteDir
-$suites = @(Get-ChildItem -Path $suitePath -Filter "*.json" -File | Sort-Object Name)
+$suiteRes = "res://" + $SuiteDir.TrimEnd("/")
 if ($Suite) {
-    $suites = @($suites | Where-Object { $_.BaseName -eq $Suite -or $_.Name -eq $Suite })
-    if ($suites.Count -eq 0) {
+    $file = @(Get-ChildItem -Path $suitePath -Filter "*.json" -File | Where-Object { $_.BaseName -eq $Suite -or $_.Name -eq $Suite })
+    if ($file.Count -eq 0) {
         Write-Host "No suite named '$Suite' under $suitePath." -ForegroundColor Red
         exit 2
     }
+    $selector = @("--suite", ($suiteRes + "/" + $file[0].Name))
+} else {
+    $selector = @("--suites", $suiteRes)
 }
 
 # Import every time, not only on a cold cache: the class cache is what makes
@@ -58,50 +67,52 @@ if (-not $SkipImport) {
     Start-Process -FilePath $GodotExe -ArgumentList "--headless", "--import", "--path", $project -Wait -WindowStyle Hidden | Out-Null
 }
 
+$log = Join-Path $env:TEMP "sim_suites.log"
+if (Test-Path $log) { Remove-Item $log }
+$args = @(
+    "--headless", "--path", $project,
+    "--script", "res://addons/tactical_battle_kit/sim/sim_cli.gd",
+    "--log-file", $log,
+    "--"
+) + $selector
+if ($Runs -gt 0) { $args += @("--runs", $Runs) }
+if ($Seed -ge 0) { $args += @("--seed", $Seed) }
+if ($Trace) { $args += "--trace" }
+
+Write-Host ("Running suites under {0}..." -f $suitePath) -ForegroundColor Cyan
+$proc = Start-Process -FilePath $GodotExe -ArgumentList $args -Wait -PassThru -WindowStyle Hidden
+$lines = if (Test-Path $log) { @(Get-Content $log) } else { @() }
+$errors = @($lines | Where-Object { $_ -match '^(USER |SCRIPT )?ERROR:' })
+
 $results = @()
 $worst = 0
-foreach ($file in $suites) {
-    $log = Join-Path $env:TEMP ("sim_{0}.log" -f $file.BaseName)
-    $args = @(
-        "--headless", "--path", $project,
-        "--script", "res://addons/tactical_battle_kit/sim/sim_cli.gd",
-        "--log-file", $log,
-        "--", "--suite", ("res://" + $SuiteDir.TrimEnd("/") + "/" + $file.Name)
-    )
-    if ($Runs -gt 0) { $args += @("--runs", $Runs) }
-    if ($Seed -ge 0) { $args += @("--seed", $Seed) }
-    if ($Trace) { $args += "--trace" }
-
-    Write-Host ("Running {0}..." -f $file.BaseName) -ForegroundColor Cyan
-    $proc = Start-Process -FilePath $GodotExe -ArgumentList $args -Wait -PassThru -WindowStyle Hidden
-    $resultLine = if (Test-Path $log) { (Select-String -Path $log -Pattern '^RESULT ' | Select-Object -Last 1).Line } else { $null }
-    $errors = if (Test-Path $log) { @(Select-String -Path $log -Pattern '^(USER |SCRIPT )?ERROR:' ) } else { @() }
-    $status = "runtime_error"
-    $duration = 0
-    if ($resultLine) {
-        $json = $resultLine.Substring(7) | ConvertFrom-Json
-        $status = $json.status
-        $duration = $json.duration_msec
-    }
-    if ($errors.Count -gt 0 -and $status -eq "pass") { $status = "runtime_error (log has ERROR lines)" }
-    # The RESULT line is the verdict. The process exit code only matters when the run never
-    # printed one: Godot mono builds sometimes die with an access violation during teardown
-    # (negative exit code) after every artifact is already written.
-    $code = if ($resultLine) { [int]$json.exit_code } else { 2 }
-    if ($errors.Count -gt 0 -and $code -eq 0) { $code = 2 }
-    if ($code -ne 0) { $worst = [Math]::Max($worst, $code) }
-    $results += [pscustomobject]@{ Suite = $file.BaseName; Status = $status; Exit = $code; Ms = $duration; Log = $log }
-    if (Test-Path $log) {
-        Select-String -Path $log -Pattern '^(FAILED|ARTIFACTS) ' | ForEach-Object { Write-Host ("  " + $_.Line) }
-        $errors | Select-Object -First 5 | ForEach-Object { Write-Host ("  " + $_.Line) -ForegroundColor Red }
-    }
+foreach ($line in @($lines | Where-Object { $_ -match '^RESULT ' })) {
+    $json = $line.Substring(7) | ConvertFrom-Json
+    $results += [pscustomobject]@{ Suite = $json.suite_id; Status = $json.status; Exit = [int]$json.exit_code; Ms = $json.duration_msec }
+    $worst = [Math]::Max($worst, [int]$json.exit_code)
 }
+$lines | Where-Object { $_ -match '^(FAILED|ARTIFACTS) ' } | ForEach-Object { Write-Host ("  " + $_) }
+$errors | Select-Object -First 5 | ForEach-Object { Write-Host ("  " + $_) -ForegroundColor Red }
+
+# The printed verdict is the verdict. The process exit code only matters when
+# the run never printed one: Godot mono builds sometimes die with an access
+# violation during teardown (negative exit code) after every artifact is
+# already written. A whole-directory run must end with SUMMARY; a single
+# suite has only its RESULT. Missing either means the engine died mid-run.
+$summaryLine = $lines | Where-Object { $_ -match '^SUMMARY ' } | Select-Object -Last 1
+if ($summaryLine) {
+    $worst = [Math]::Max($worst, [int](($summaryLine.Substring(8) | ConvertFrom-Json).exit_code))
+} elseif (-not $Suite -or $results.Count -eq 0) {
+    Write-Host ("No verdict printed (process exit {0}); see {1}" -f $proc.ExitCode, $log) -ForegroundColor Red
+    $worst = 2
+}
+if ($errors.Count -gt 0) { $worst = [Math]::Max($worst, 2) }
 
 Write-Host ""
 $results | Format-Table -AutoSize | Out-String | Write-Host
 if ($worst -ne 0) {
-    Write-Host "Sim suites FAILED (worst exit $worst)." -ForegroundColor Red
+    Write-Host ("Sim suites FAILED (worst exit {0}); log: {1}" -f $worst, $log) -ForegroundColor Red
 } else {
-    Write-Host "All sim suites passed." -ForegroundColor Green
+    Write-Host "All sim suites passed."  -ForegroundColor Green
 }
 exit $worst

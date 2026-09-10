@@ -3,6 +3,8 @@ extends RefCounted
 
 ## Writes a suite report to disk: <out>/<suite_id>/<timestamp>/report.json
 ## and report.md, a per-suite latest.json pointer, and <out>/latest_suite.json.
+## A --suites run also gets <out>/summary.json and summary.md: one row per
+## suite, the worst exit code, and the verdict.
 
 
 static func write(report: Dictionary, out_dir: String) -> String:
@@ -27,6 +29,74 @@ static func write(report: Dictionary, out_dir: String) -> String:
 	_write_text(ProjectSettings.globalize_path(out_dir.path_join(suite_id).path_join("latest.json")), JSON.stringify(pointer, "  "))
 	_write_text(ProjectSettings.globalize_path(out_dir.path_join("latest_suite.json")), JSON.stringify(pointer, "  "))
 	return absolute
+
+
+## Fold one report per suite into the cross-suite verdict. Each row keeps
+## what the RESULT line prints plus the report directory.
+static func summarize(reports: Array[Dictionary], worst_exit: int) -> Dictionary:
+	var rows: Array[Dictionary] = []
+	var passed := 0
+	var duration := 0
+	for report: Dictionary in reports:
+		var exit_code := int(report.get("exit_code", SimSuite.EXIT_RUNTIME_ERROR))
+		if exit_code == SimSuite.EXIT_PASS:
+			passed += 1
+		duration += int(report.get("duration_msec", 0))
+		rows.append({
+			"suite_id": str(report.get("suite_id", "")),
+			"status": str(report.get("status", "runtime_error")),
+			"exit_code": exit_code,
+			"failed": (report.get("failed", []) as Array).size(),
+			"errors": report.get("errors", []),
+			"duration_msec": int(report.get("duration_msec", 0)),
+			"path": str(report.get("artifacts", "")),
+		})
+	var status := "pass"
+	if worst_exit == SimSuite.EXIT_ASSERTION_FAILURE:
+		status = "assertion_failure"
+	elif worst_exit != SimSuite.EXIT_PASS:
+		status = "runtime_error"
+	return {
+		"suites": rows,
+		"passed": passed,
+		"failed": rows.size() - passed,
+		"status": status,
+		"exit_code": worst_exit,
+		"duration_msec": duration,
+		"timestamp": Time.get_datetime_string_from_system(true, true),
+	}
+
+
+static func write_summary(summary: Dictionary, out_dir: String) -> String:
+	var absolute := ProjectSettings.globalize_path(out_dir)
+	DirAccess.make_dir_recursive_absolute(absolute)
+	_write_text(absolute.path_join("summary.json"), JSON.stringify(summary, "  "))
+	_write_text(absolute.path_join("summary.md"), summary_to_markdown(summary))
+	return absolute
+
+
+static func summary_to_markdown(summary: Dictionary) -> String:
+	var lines: Array[String] = []
+	lines.append("# Sim suites")
+	lines.append("")
+	lines.append("**Status:** %s (exit %d) · %d suites, %d passed, %d failed · %d ms · %s" % [
+		str(summary["status"]), int(summary["exit_code"]), (summary["suites"] as Array).size(),
+		int(summary["passed"]), int(summary["failed"]), int(summary["duration_msec"]), str(summary["timestamp"]),
+	])
+	lines.append("")
+	lines.append("| Suite | Status | Exit | Failed assertions | ms | Report |")
+	lines.append("| --- | --- | --- | --- | --- | --- |")
+	for row: Dictionary in summary["suites"]:
+		var report_path := str(row["path"])
+		lines.append("| %s | %s | %d | %d | %d | %s |" % [
+			str(row["suite_id"]), str(row["status"]), int(row["exit_code"]), int(row["failed"]),
+			int(row["duration_msec"]), "-" if report_path.is_empty() else report_path.path_join("report.md"),
+		])
+	lines.append("")
+	for row: Dictionary in summary["suites"]:
+		for error: Variant in row.get("errors", []):
+			lines.append("- %s: %s" % [str(row["suite_id"]), str(error)])
+	return "\n".join(lines)
 
 
 static func _without_trace(report: Dictionary) -> Dictionary:

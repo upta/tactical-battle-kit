@@ -8,6 +8,7 @@ extends RefCounted
 ##
 ## Suite shape:
 ##   suite_id, description, battle (path | dict), runs, seed,
+##   register [script paths with a static register()],
 ##   overrides {battle|ruleset|unit_defs|terrain_defs: ...},
 ##   matchups [{id, ai: {faction: ai_id}}],
 ##   sweep {path: "unit_defs.cavalry.attack", values: [...]},
@@ -50,6 +51,11 @@ func run(suite: Dictionary) -> Dictionary:
 		"exit_code": EXIT_PASS,
 		"timestamp": Time.get_datetime_string_from_system(true, true),
 	}
+
+	for registration: Variant in suite.get("register", []):
+		var problem := register_pack(str(registration))
+		if not problem.is_empty():
+			return _fail_runtime(report, problem, started)
 
 	var battle_data := _resolve_battle(suite)
 	if battle_data.is_empty():
@@ -113,6 +119,19 @@ func _fail_runtime(report: Dictionary, message: String, started: int) -> Diction
 	report["exit_code"] = EXIT_RUNTIME_ERROR
 	report["duration_msec"] = Time.get_ticks_msec() - started
 	return report
+
+
+## Load an AI pack: a script whose static register() puts AIs into the
+## AiRegistry. Returns "" or the problem. Registrations are process-wide,
+## so a pack named by one suite is visible to every suite after it.
+static func register_pack(path: String) -> String:
+	var script: GDScript = load(path)
+	if script == null:
+		return "AI pack did not load: %s" % path
+	if not script.has_method("register"):
+		return "AI pack has no static register(): %s" % path
+	script.call("register")
+	return ""
 
 
 const OVERRIDE_ROOTS: Array[String] = ["battle", "ruleset", "unit_defs", "terrain_defs"]
