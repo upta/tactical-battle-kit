@@ -1,0 +1,17 @@
+{
+  "suite_id": "sentry_hp_baseline",
+  "description": "How much does sentry HP move the garrison's hold rate against the rush AI? 12 is the shipped value and the baseline; 9, 15 and 18 bracket it. Read the deltas table: a delta smaller than the intervals beside it is noise, and the assertions only pin that the intervals are tight enough to read and that no AI picked an illegal action.",
+  "battle": "res://battles/outpost.json",
+  "runs": 60,
+  "seed": 700,
+  "register": ["res://ai/raider_pack.gd"],
+  "matchups": [
+    {"id": "garrison_vs_rush", "ai": {"garrison": "garrison", "raiders": "rush"}}
+  ],
+  "sweep": {"path": "unit_defs.sentry.max_hp", "values": [9, 12, 15, 18]},
+  "baseline": {"sweep_value": 12},
+  "assertions": [
+    {"metric": "ci95.win_rate.garrison", "comparator": "lte", "expected": 0.15},
+    {"metric": "metrics.events.rejected", "comparator": "eq", "expected": 0}
+  ]
+}
