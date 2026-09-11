@@ -46,8 +46,10 @@ itself is suspect regardless of the verdict.
 ## Write the analysis
 
 Write `analysis.md` in the run directory (the `ARTIFACTS` path). Headings,
-paragraphs, `-` bullets, `**bold**` and `` `code` `` render; keep it to
-what a designer needs:
+paragraphs, `-` bullets, `**bold**` and `` `code` `` render. It is for a
+designer, so no metric paths or assertion syntax: "the garrison holds 68%
+of the time, give or take 11" rather than `win_rate.garrison 0.68 ±0.11`.
+Keep it to what they need:
 
 ```markdown
 # Reading

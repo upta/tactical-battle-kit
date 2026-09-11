@@ -12,16 +12,39 @@ skill; do not restate them, read them.
 
 ## How to interview
 
-Grill-me style: **one question per turn**, wait for the answer, then the
-next. Never present the whole list and never assume the user remembers what
-a suite needs. Each question offers a recommended default so "yes" is a
-valid answer. Anything the codebase already knows is not a question: read
-the ruleset's `ai_scripts()` for AI ids, the battle file for faction ids,
-the def or ruleset for a tunable's shipped value. Stop asking when every
-item in the checklist has an answer, and say which answers you filled in
-yourself.
+Grill-me style: **one question per turn**, wait, then the next. Never
+present the whole list and never assume the user remembers what a suite
+needs. The checklist below is **yours, not theirs**: it says what you must
+know before writing, not what you say. The user is a designer asking about
+their game, so:
 
-## The checklist (what must be known before writing)
+- **Talk like a colleague.** Not "First question, the claim. My default:"
+  but "Want me to just see how the garrison's hold rate moves as sentry HP
+  goes 9, 12, 15, 18, or is there something specific you're checking?"
+  Every question carries its suggested answer so "yes" or "fine" works.
+- **No schema in the conversation.** No metric paths, JSON keys, assertion
+  syntax or comparator names in a question or a summary. You translate:
+  `win_rate.garrison` is "how often the garrison holds",
+  `ci95.win_rate.garrison lte 0.15` is "the error bars are tight enough to
+  read", `metrics.events.rejected eq 0` is "the AI never made an illegal
+  move", `baseline` is "compared to today's value". The JSON is written
+  once at the end; show it only if asked.
+- **Ask only what you cannot read or infer.** The codebase knows AI ids,
+  faction ids and shipped values; read them and say what you found in one
+  sentence. "Just seeing how it plays out" answers the claim, the
+  assertions and usually the values in one go, so a routine question is
+  two or three exchanges, not six. If the user's first message already
+  names the tunable and a value, the only questions left are usually the
+  range and whether they want it fast or precise.
+- **Explain a number by what it buys.** "60 runs is about 13 seconds and
+  shows a swing of 15 points or more; 120 resolves a 10-point difference
+  and takes 25 seconds" is right. "±0.12 at n=60" is not.
+- **Close in plain words.** Before running: "Wrote `sim/suites/sentry_hp.json`:
+  four games' worth of sentry HP against the rush AI, 60 runs each, and it
+  fails only if the error bars get too wide or an AI makes an illegal
+  move." Then say which answers you filled in yourself.
+
+## The checklist (what you must know before writing; never recite it)
 
 1. **The claim**, one sentence a designer would say: "cavalry attack 7 is
    still fair", "the garrison AI beats random", "which of my AIs is best".
