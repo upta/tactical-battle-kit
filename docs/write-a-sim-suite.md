@@ -67,10 +67,29 @@ loads is visible to every suite after it in a `--suites` run.
 ## What comes out
 
 `<out>/<suite_id>/<timestamp>/report.json` (everything, including each run's
-seed, winner, reason and rounds), `report.md` (the tables), `trace.json` when
-`--trace` was given (one run's full event log and final state), and
-`latest.json` pointers per suite and overall. A `--suites` run also writes
-`<out>/summary.json` and `summary.md`: one row per suite and the verdict.
+seed, winner, reason and rounds), `report.md` (the tables), `report.html`
+(the same, as a self-contained page: bars with interval whiskers, delta
+bars, a sweep chart, standings and matrix), `trace.json` when `--trace` was
+given (one run's full event log and final state), and `latest.json`
+pointers per suite and overall. A `--suites` run also writes
+`<out>/summary.json`, `summary.md` and `summary.html`: one row per suite
+and the verdict. Every `ARTIFACTS` line is followed by a `URL` line, the
+`file:///` address of that page.
+
+## Showing someone the answer
+
+Write `analysis.md` in the run directory (headings, paragraphs, bullets,
+bold and code are rendered; nothing else is interpreted), then re-render:
+
+```
+godot --headless --path <project> --script res://addons/tactical_battle_kit/sim/sim_cli.gd -- \
+  --render res://artifacts/sim/<suite_id>/<timestamp>
+```
+
+It prints `RENDERED <path>` and `URL file:///...`; the page opens with the
+analysis at the top. Run directories are transient artifacts, so a
+conclusion worth keeping goes into the suite's `description` and
+assertions, or a decision record; the page is for showing someone today.
 
 ## Tournaments
 

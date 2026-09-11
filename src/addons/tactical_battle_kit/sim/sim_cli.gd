@@ -13,19 +13,32 @@ extends SceneTree
 # "ARTIFACTS <dir>" line and one "FAILED ..." line per failed assertion;
 # --suites ends with "SUMMARY {json}" and writes <out>/summary.md. The exit
 # code is 0 (pass), 1 (assertion failure) or 2 (runtime error), the worst
-# across suites. --register loads a script and calls its static register()
-# so a game's AIs are in the AiRegistry before any suite names them; a suite
-# can do the same for itself with a "register" list.
+# across suites. Every report also gets a report.html, and each ARTIFACTS
+# line is followed by a URL line pointing at it. --render <run dir> re-emits
+# that page with the directory's analysis.md embedded and prints its URL.
+# --register loads a script and calls its static register() so a game's AIs
+# are in the AiRegistry before any suite names them; a suite can do the same
+# for itself with a "register" list.
 
 const DEFAULT_OUT := "res://artifacts/sim"
 
 
 func _initialize() -> void:
 	var args := _parse_args(OS.get_cmdline_user_args())
+	var render_target := str(args.get("render", ""))
+	if not render_target.is_empty():
+		var page := SimReport.render(render_target)
+		if page.is_empty():
+			_usage_error("sim_cli: --render found nothing to render at " + render_target)
+			return
+		print("RENDERED " + page)
+		print("URL " + SimReport.file_url(page))
+		_quit(SimSuite.EXIT_PASS)
+		return
 	var suite_path := str(args.get("suite", ""))
 	var suites_dir := str(args.get("suites", ""))
 	if suite_path.is_empty() == suites_dir.is_empty():
-		_usage_error("sim_cli: exactly one of --suite <path> or --suites <dir> is required.")
+		_usage_error("sim_cli: exactly one of --suite <path>, --suites <dir> or --render <dir> is required.")
 		return
 
 	for registration: String in args.get("register", []):
@@ -55,8 +68,9 @@ func _initialize() -> void:
 		_quit(worst)
 		return
 	var summary := SimReport.summarize(reports, worst)
-	SimReport.write_summary(summary, out_dir)
+	var summary_dir := SimReport.write_summary(summary, out_dir)
 	print("SUMMARY " + JSON.stringify(_summary_line(summary)))
+	print("URL " + SimReport.file_url(summary_dir.path_join("summary.html")))
 	_quit(worst)
 
 
@@ -92,6 +106,7 @@ func _print_result(report: Dictionary, out_dir: String) -> void:
 	print("RESULT " + JSON.stringify(summary))
 	if not out_dir.is_empty():
 		print("ARTIFACTS " + out_dir)
+		print("URL " + SimReport.file_url(out_dir.path_join("report.html")))
 	for failure: Dictionary in report.get("failed", []):
 		print("FAILED %s %s %s: actual %s, expected %s %s" % [
 			str(failure.get("metric")), str(failure.get("matchup")),
@@ -140,7 +155,7 @@ static func _parse_args(user_args: PackedStringArray) -> Dictionary:
 	while i < user_args.size():
 		var arg := user_args[i]
 		match arg:
-			"--suite", "--suites", "--out", "--runs", "--seed":
+			"--suite", "--suites", "--render", "--out", "--runs", "--seed":
 				if i + 1 < user_args.size():
 					parsed[arg.trim_prefix("--")] = user_args[i + 1]
 					i += 1

@@ -85,12 +85,23 @@ jobs:
           if [ -z "$code" ] || [ "$code" != "0" ]; then fail=1; fi
           exit $fail
 
+      - name: Check the report pages
+        # Every report.html and summary.html must be well-formed (tag
+        # balance, XMLParser) and carry the sections its report implies.
+        run: |
+          godot --headless --path src --script res://tools/check_reports.gd > /tmp/reports.log 2>&1 || true
+          cat /tmp/reports.log
+          grep -q '^REPORT CHECK COMPLETE: [1-9][0-9]* pages, 0 failures' /tmp/reports.log
+
       - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: sim-reports
-          path: src/artifacts/sim/**/report.md
+          path: |
+            src/artifacts/sim/**/report.md
+            src/artifacts/sim/**/report.html
+            src/artifacts/sim/summary.html
           if-no-files-found: ignore
 
 
@@ -128,6 +139,15 @@ jobs:
           code=$(grep -E '^SUMMARY ' /tmp/eg.log | tail -1 | sed -E 's/.*"exit_code":([0-9]+).*/\1/')
           if [ -z "$code" ] || [ "$code" != "0" ]; then fail=1; fi
           exit $fail
+
+      - name: Check the report pages
+        # The checker is a kit tool, so it runs from the kit's project
+        # against the example game's artifacts.
+        run: |
+          godot --headless --import --path src > /tmp/import_src.log 2>&1 || (cat /tmp/import_src.log && exit 1)
+          godot --headless --path src --script res://tools/check_reports.gd -- --dir "$GITHUB_WORKSPACE/example-game/artifacts/sim" > /tmp/reports.log 2>&1 || true
+          cat /tmp/reports.log
+          grep -q '^REPORT CHECK COMPLETE: [1-9][0-9]* pages, 0 failures' /tmp/reports.log
 
       - name: Prove the failure path
         # A throwaway suite that cannot pass, written and deleted here so

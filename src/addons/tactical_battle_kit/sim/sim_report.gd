@@ -1,10 +1,14 @@
 class_name SimReport
 extends RefCounted
 
-## Writes a suite report to disk: <out>/<suite_id>/<timestamp>/report.json
-## and report.md, a per-suite latest.json pointer, and <out>/latest_suite.json.
-## A --suites run also gets <out>/summary.json and summary.md: one row per
-## suite, the worst exit code, and the verdict.
+## Writes a suite report to disk: <out>/<suite_id>/<timestamp>/report.json,
+## report.md and report.html, a per-suite latest.json pointer, and
+## <out>/latest_suite.json. A --suites run also gets <out>/summary.json,
+## summary.md and summary.html: one row per suite, the worst exit code, and
+## the verdict. render() re-emits a page from its JSON, embedding an
+## analysis.md found beside a report.
+
+const ANALYSIS_FILE := "analysis.md"
 
 
 static func write(report: Dictionary, out_dir: String) -> String:
@@ -14,10 +18,11 @@ static func write(report: Dictionary, out_dir: String) -> String:
 	var absolute := ProjectSettings.globalize_path(run_dir)
 	DirAccess.make_dir_recursive_absolute(absolute)
 
-	_write_text(absolute.path_join("report.json"), JSON.stringify(_without_trace(report), "  "))
+	_write_text(absolute.path_join("report.json"), JSON.stringify(_without_trace(report), "  ", false))
 	_write_text(absolute.path_join("report.md"), to_markdown(report))
+	_write_text(absolute.path_join("report.html"), SimHtml.render(_without_trace(report)))
 	if report.has("trace"):
-		_write_text(absolute.path_join("trace.json"), JSON.stringify(report["trace"], "  "))
+		_write_text(absolute.path_join("trace.json"), JSON.stringify(report["trace"], "  ", false))
 
 	var pointer := {
 		"suite_id": suite_id,
@@ -70,9 +75,53 @@ static func summarize(reports: Array[Dictionary], worst_exit: int) -> Dictionary
 static func write_summary(summary: Dictionary, out_dir: String) -> String:
 	var absolute := ProjectSettings.globalize_path(out_dir)
 	DirAccess.make_dir_recursive_absolute(absolute)
-	_write_text(absolute.path_join("summary.json"), JSON.stringify(summary, "  "))
+	_write_text(absolute.path_join("summary.json"), JSON.stringify(summary, "  ", false))
 	_write_text(absolute.path_join("summary.md"), summary_to_markdown(summary))
+	_write_text(absolute.path_join("summary.html"), SimHtml.render_summary(summary))
 	return absolute
+
+
+## Re-render a page from its JSON. `target` is a run directory, a
+## report.json, an output directory holding summary.json, or that file.
+## A report picks up analysis.md from its directory. Returns the absolute
+## path of the page written, or "" with an error pushed.
+static func render(target: String) -> String:
+	var absolute := ProjectSettings.globalize_path(target)
+	var json_path := ""
+	if absolute.get_file() == "report.json" or absolute.get_file() == "summary.json":
+		json_path = absolute
+	elif FileAccess.file_exists(absolute.path_join("report.json")):
+		json_path = absolute.path_join("report.json")
+	elif FileAccess.file_exists(absolute.path_join("summary.json")):
+		json_path = absolute.path_join("summary.json")
+	else:
+		push_error("Nothing to render at %s: expected report.json or summary.json." % absolute)
+		return ""
+	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(json_path))
+	if not (data is Dictionary):
+		push_error("Could not parse %s." % json_path)
+		return ""
+	var dir := json_path.get_base_dir()
+	var page := ""
+	var html := ""
+	if json_path.get_file() == "summary.json":
+		page = dir.path_join("summary.html")
+		html = SimHtml.render_summary(data)
+	else:
+		page = dir.path_join("report.html")
+		var analysis := ""
+		var analysis_path := dir.path_join(ANALYSIS_FILE)
+		if FileAccess.file_exists(analysis_path):
+			analysis = SimHtml.markdown_subset(FileAccess.get_file_as_string(analysis_path))
+		html = SimHtml.render(data, analysis)
+	_write_text(page, html)
+	return page
+
+
+## file:/// form of an absolute path, for a human's browser.
+static func file_url(absolute: String) -> String:
+	var normalized := absolute.replace("\\", "/")
+	return ("file://" if normalized.begins_with("/") else "file:///") + normalized
 
 
 static func summary_to_markdown(summary: Dictionary) -> String:
@@ -161,8 +210,8 @@ static func to_markdown(report: Dictionary) -> String:
 			lines.append("## %s" % label)
 			lines.append("")
 			if matchup.has("delta"):
-				lines.append("- vs baseline: " + _format_delta_leaves(matchup["delta"]))
-			lines.append("- End reasons: " + _format_rates(aggregate.get("reason", {})))
+				lines.append("- vs baseline: " + format_delta_leaves(matchup["delta"]))
+			lines.append("- End reasons: " + format_rates(aggregate.get("reason", {})))
 			var faction_metrics: Dictionary = aggregate["metrics"].get("faction", {})
 			for faction: String in faction_metrics.keys():
 				var stats: Dictionary = faction_metrics[faction]
@@ -186,7 +235,7 @@ static func to_markdown(report: Dictionary) -> String:
 			lines.append("| %s | %s | %s | %s | %s | %s | %s |" % [
 				"PASS" if v["passed"] else "FAIL", str(v["metric"]), str(v["matchup"]),
 				str(v["sweep_value"]) if v["sweep_value"] != null else "-",
-				_format_value(v["actual"]), str(v["comparator"]), _format_value(v["expected"]),
+				format_value(v["actual"]), str(v["comparator"]), format_value(v["expected"]),
 			])
 		lines.append("")
 
@@ -276,7 +325,7 @@ static func _signed(value: Variant) -> String:
 
 ## The custom and per-faction metric deltas, flattened to "path +x". Def
 ## and event deltas stay in report.json; here they would drown the line.
-static func _format_delta_leaves(delta: Dictionary) -> String:
+static func format_delta_leaves(delta: Dictionary) -> String:
 	var parts: Array[String] = []
 	_flatten_delta(delta.get("custom", {}), "custom", parts)
 	_flatten_delta((delta.get("metrics", {}) as Dictionary).get("faction", {}), "faction", parts)
@@ -291,14 +340,14 @@ static func _flatten_delta(value: Variant, prefix: String, parts: Array[String])
 		parts.append("%s %+.2f" % [prefix, float(value)])
 
 
-static func _format_rates(rates: Dictionary) -> String:
+static func format_rates(rates: Dictionary) -> String:
 	var parts: Array[String] = []
 	for key: String in rates.keys():
 		parts.append("%s %.0f%%" % [key, float(rates[key]) * 100.0])
 	return ", ".join(parts)
 
 
-static func _format_value(value: Variant) -> String:
+static func format_value(value: Variant) -> String:
 	if value == null:
 		return "null"
 	if value is float:

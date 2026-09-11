@@ -60,8 +60,41 @@ squares), non-baseline cells get `delta`, and assertions accept
   gains one baseline suite so the feature is proven from outside too.
 - Major: yes, aggregate and assertion shapes.
 
+## Task 2.5: A report page with the analysis in it
+The kit renders `report.html` (and `summary.html`) from `report.json`:
+self-contained, no CDN, light and dark; win rates as bars with interval
+whiskers, deltas as signed bars, sweeps as an inline SVG line with a
+confidence band, standings as bars, the matrix as a heatmap. A `--render`
+step re-emits the page with an `analysis.md` from the run directory
+embedded at the top, so an agent can show a human the numbers and the
+reading in one place.
+- Acceptance: CI renders a matchup, a sweep-with-baseline and a tournament
+  report and parses each with Godot's `XMLParser` (strict markup) and
+  checks the expected sections; the human look is Checkpoint 2. RED today:
+  no `report.html` exists and `--render` is an unknown flag.
+- Files: `sim/sim_html.gd` (new), `sim_cli.gd`, `sim_report.gd`, `ci.yml`,
+  skill and docs.
+- Major: yes, a new artifact, a CLI flag and a new sim file.
+
+## Task 2.6: Two procedural skills for a game's agent
+`author-sim-suite` interviews grill-me style, one question at a time, and
+never assumes the user remembers a field: what is the claim, what metric
+moves if it is false, which form (matchup, sweep plus baseline,
+tournament), which battle and AIs, how many runs for the interval to be
+narrower than the effect; then writes the JSON, proves it can go RED, and
+pins assertions. `run-sim-suite` runs one or all, reads summary then
+report, writes `analysis.md`, renders and opens the page, and says where a
+conclusion worth keeping goes (the suite description, a decision), since
+run directories are transient.
+- Acceptance: the install skill copies both; Checkpoint 2 uses only them.
+  No automated proof: a skill is prose. RED today: the skills do not exist.
+- Files: `.github/skills/author-sim-suite/`, `.github/skills/run-sim-suite/`,
+  `symlink-config.txt`, install skill, `run-balance-sim` trimmed to the
+  schema reference the two procedures point at.
+- Major: no; follows the exported-skill pattern (`run-balance-sim`).
+
 ## Checkpoint 2 (HUMAN)
-- [ ] Following only the install skill, add a third suite to `example-game/`
-      that bumps one of its unit stats and read the delta/CI table. Did the
-      kit tell you whether the change mattered, with no step you had to
-      guess?
+- [ ] Using only `author-sim-suite` and `run-sim-suite` in `example-game/`,
+      ask one balance question (bump a unit stat), get the page, and read
+      it. Did the interview ask everything it needed, and does the page
+      tell you whether the change mattered without opening the JSON?

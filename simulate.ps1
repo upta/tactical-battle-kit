@@ -109,6 +109,23 @@ if ($summaryLine) {
 }
 if ($errors.Count -gt 0) { $worst = [Math]::Max($worst, 2) }
 
+# After a whole-directory run in the kit's own project, prove the report
+# pages: well-formed markup with the sections each report implies. The
+# checker is a repo tool (src/tools), so a consumer's copy of this script
+# skips it.
+$checker = Join-Path $project "tools/check_reports.gd"
+if (-not $Suite -and (Test-Path $checker)) {
+    $checkLog = Join-Path $env:TEMP "check_reports.log"
+    if (Test-Path $checkLog) { Remove-Item $checkLog }
+    Start-Process -FilePath $GodotExe -ArgumentList "--headless", "--path", $project, "--script", "res://tools/check_reports.gd", "--log-file", $checkLog -Wait -WindowStyle Hidden | Out-Null
+    $checkLines = if (Test-Path $checkLog) { @(Get-Content $checkLog) } else { @() }
+    $checkLines | Where-Object { $_ -match '^REPORT ' } | ForEach-Object { Write-Host ("  " + $_) }
+    if (-not ($checkLines | Where-Object { $_ -match '^REPORT CHECK COMPLETE: [1-9][0-9]* pages, 0 failures' })) {
+        Write-Host "Report pages FAILED their check; see $checkLog" -ForegroundColor Red
+        $worst = [Math]::Max($worst, 2)
+    }
+}
+
 Write-Host ""
 $results | Format-Table -AutoSize | Out-String | Write-Host
 if ($worst -ne 0) {
