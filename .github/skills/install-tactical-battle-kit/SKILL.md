@@ -53,9 +53,10 @@ godot --headless --path . --script res://addons/tactical_battle_kit/sim/sim_cli.
    `view.state`, and `await runner.step()` on a key press. Boot it headless
    with `--quit-after` and a printed marker to prove it before opening the
    editor.
-7. Copy `.github/skills/author-battle-ruleset` and
-   `.github/skills/run-balance-sim` from the kit into the project's
-   `.claude/skills/`.
+7. Copy `.github/skills/author-battle-ruleset`, `run-balance-sim`,
+   `author-sim-suite` and `run-sim-suite` from the kit into the project's
+   `.claude/skills/`. The last two are the loop: ask a balance question,
+   get a suite, run it, get a page with the reading in it.
 
 ## Checks
 

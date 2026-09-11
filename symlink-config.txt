@@ -19,3 +19,5 @@ tools=submodules/agentic_godot_validation/tools
 
 # The example game links the addon the way a consuming project would
 example-game/addons/tactical_battle_kit=src/addons/tactical_battle_kit
+.claude/skills/author-sim-suite=.github/skills/author-sim-suite
+.claude/skills/run-sim-suite=.github/skills/run-sim-suite

@@ -60,9 +60,11 @@ on every push. Copy its shape; nothing in it is test-only.
 
 ## Skills
 
-Copy or symlink `.github/skills/author-battle-ruleset` and
-`.github/skills/run-balance-sim` into the project's `.claude/skills/` so an
-agent working in the game has the seam table and the suite schema.
+Copy or symlink `.github/skills/author-battle-ruleset`, `run-balance-sim`,
+`author-sim-suite` and `run-sim-suite` into the project's `.claude/skills/`
+so an agent working in the game has the seam table, the suite schema, and
+the two procedures: interview for a suite, then run it and hand back a
+report page with the analysis in it.
 
 ## Requirements
 

@@ -74,28 +74,24 @@ played, both sides and all battles pooled). Cells are named
 one with `matchup`. Run i of every cell uses the same seed, so a swapped
 pair differs only in who moved first.
 
-## Writing a suite that has teeth
+## Writing and running one
 
-- Name the metric that would move if the claim were false, and assert that.
-  `metrics.events.rejected eq 0` proves the AI never returned an illegal
-  action; it says nothing about whether entrenching works. `custom.routed`
-  or `metrics.events.entrenched` does.
-- Band width follows run count: 30 runs gives a win rate ±17 points at 95%.
-  Do not assert 0.45 to 0.55 on 30 runs.
-- Sweeps are questions. Put values on both sides of the knee you expect, and
-  read the table rather than asserting every cell.
-- Keep a suite under about 60 s (the report prints `duration_msec`). Shrink
-  runs or the map before shrinking the assertion.
-- Prove RED: break the rule the suite guards (set a multiplier to 1.0, remove
-  a tag) and watch the assertion fail before trusting it.
+This file is the reference. The procedures are two skills: author-sim-suite
+(interview the user one question at a time, pick the form, write the JSON,
+prove RED) and run-sim-suite (run, read, write `analysis.md`, render the
+page, hand over its URL).
 
 ## Reading a report
 
 `src/artifacts/sim/<suite_id>/latest.json` points at the newest run;
-`report.md` has the matchup table (win rates, draws, rounds, decisions), a
-per-cell block (end reasons, per-faction damage/kills/survivors/hp share,
-custom), and the assertion table with actual values. `report.json` has the
-same plus every run's seed, winner, reason and rounds.
+`report.md` has the matchup table (win rates with intervals, draws, rounds,
+decisions), the deltas table for a baseline suite, standings and matrix for
+a tournament, a per-cell block (end reasons, per-faction
+damage/kills/survivors/hp share, custom), and the assertion table with
+actual values. `report.json` has the same plus every run's seed, winner,
+reason and rounds. `report.html` is the same page for a human, with
+`analysis.md` embedded when `--render` is run on the directory; every
+`ARTIFACTS` line is followed by its `URL`.
 
 To replay one run: `./simulate.ps1 -Suite <id> -Runs 1 -Seed <seed> -Trace`
 writes `trace.json` with the full event log and final state of that run.

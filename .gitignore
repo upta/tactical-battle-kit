@@ -17,3 +17,5 @@
 
 # The example game links the addon the same way (its own .gitignore covers the rest)
 /example-game/addons/tactical_battle_kit
+/.claude/skills/author-sim-suite
+/.claude/skills/run-sim-suite

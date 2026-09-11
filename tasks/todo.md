@@ -12,7 +12,11 @@ architecture-proposal gate at /build.
       ✅ 2026-09-10 (round-robin over AIs × battles with side swap; found rush beats garrison 77% in the example game)
 - [x] Task 2.4: baseline cell, deltas, ci95, `within ... of baseline`
       ✅ 2026-09-10 (Wilson and normal intervals on every aggregate; deltas table; one raider attack point flips the outpost 68% to 3%)
-- [ ] Checkpoint 2: add a stat-bump suite to `example-game/` from the skill alone
+- [x] Task 2.5: `report.html` and `summary.html`, `--render` with `analysis.md`
+      ✅ 2026-09-11 (self-contained pages with whiskers, delta bars, sweep chart, heatmap; check_reports.gd in simulate.ps1 and CI)
+- [x] Task 2.6: `author-sim-suite` (grill-me interview) and `run-sim-suite` skills
+      ✅ 2026-09-11 (one question per turn, never assumes a field; run skill ends with the page URL)
+- [ ] Checkpoint 2: ask one balance question of `example-game/` using only the two skills; read the page
 
 ## Unplayed, carried
 
