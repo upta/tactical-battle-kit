@@ -37,6 +37,8 @@ silent architecture), not a workaround.
 | An AI by name | `ai_scripts()` returning `{id: Script}` |
 | Big units | `UnitDef.footprint` offsets (symmetric, no rotation); the battlefield example's two-cell creatures |
 | Pass over but never stop (flyers over obstacles) | `can_stop_at(state, unit, cell)` on the ruleset |
+| Enter but never pass through (zone of control beside an enemy) | `can_continue_from(state, unit, cell)` on the ruleset; the cell stays a destination, the origin always expands |
+| Enter but never pass through (zone of control beside an enemy) | `can_continue_from(state, unit, cell)` on the ruleset; the frontier example wires it behind a tunable |
 
 Randomness always comes from the `BattleRng` passed in. Never `randi()`.
 

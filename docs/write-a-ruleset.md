@@ -39,6 +39,14 @@ func movement_cost(state: BattleState, unit: BattleUnit, cell: Vector2i) -> int:
 	return super(state, unit, cell)
 ```
 
+Three movement strategies sit beside the cost and answer questions a cost
+cannot: `can_pass_through(state, mover, other)` for occupied cells,
+`can_stop_at(state, unit, cell)` for cells a unit may cross but never end
+on (a flyer over a wall), and `can_continue_from(state, unit, cell)` for
+cells a unit may end on but never walk past (a zone of control beside an
+enemy). The pathfinder still offers such a cell as a destination; it only
+stops searching beyond it. The mover's own cell always expands.
+
 **A template step** (attack variants, area effects):
 
 ```gdscript

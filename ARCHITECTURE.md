@@ -18,7 +18,7 @@ this file has a bug: fix it or delete it.
 | `src/examples/chess/` | Chess: `chess_ruleset.gd` (one action per turn, checkmate outcome), `chess_move_rule.gd` (all movement, king safety by ray casting), `ai/capture_first_ai.gd`, `battles/standard.json` (inline defs). |
 | `src/examples/breach/` | XCOM-flavored breach on a painted TileMap: `breach_ruleset.gd` (action points, cover from tile tags, overwatch reactions through `apply_reaction`, reinforcements through `spawn`), `rules/`, `ai/`, `map/` (generated tileset and TileMapLayer scene; `tools/build_map.gd` bootstrapped them once), `breach.tscn` + `breach_scene.gd` + `breach_overlay.gd` (its own presentation: TileMapLayers, highlight layer, overlay drawing). |
 | `src/examples/battlefield/` | Heroes-style stacks on a painted half-offset-square map: `battlefield_ruleset.gd` (initiative scheduler with Wait, stacks, flyers via `movement_cost` + `can_stop_at`), `stack_def.gd` (subclassed def: creature hp, damage range, speed, shots, size, flying), `rules/` (melee with one retaliation, volley, death cloud AreaRule with friendly fire, defend, delay), `ai/`, `map/` (generated tileset and TileMapLayer scene), `battlefield.tscn` + scene and overlay scripts. |
-| `src/examples/frontier/` | Hex musket war: `frontier_ruleset.gd` (per-unit initiative, supply, entrench clearing), `rules/` (musket attack with powder and routing, entrench, damage model), `ai/frontier_ai.gd`, `battles/river_crossing.json`. |
+| `src/examples/frontier/` | Hex musket war: `frontier_ruleset.gd` (per-unit initiative, supply, entrench clearing, zone of control behind a tunable), `rules/` (musket attack with powder and routing, entrench, damage model), `ai/frontier_ai.gd`, `battles/river_crossing.json`. |
 | `src/sim/suites/` | Balance suites, one claim each; `./simulate.ps1` runs them all. |
 | `example-game/` | A second Godot project that consumes the addon the way a game does (symlinked `addons/`, its own `rules/`, `ai/`, `battles/`, `sim/suites/`). Both the CI fixture for the consumer path and the only demonstration of a consuming project's layout, so everything in it is what a real game would write (D17). |
 | `src/validation/` | The scenario suite: `scenarios/*.json`, `harnesses/*.tscn`, `scripts/harness_controllers/`, `fixtures/*.json` (tiny battles). |
@@ -42,7 +42,9 @@ these and nothing else:
   the outcome.
 - **Movement.** `movement_cost(state, unit, cell)` (-1 impassable),
   `can_stop_at` (pass over but never end there: flyers over obstacles),
-  `can_pass_through`, `move_budget`, `single_move`. `Pathfinder` reads these;
+  `can_continue_from` (enter but never pass through: a zone of control
+  beside an enemy), `can_pass_through`, `move_budget`, `single_move`.
+  `Pathfinder` reads these;
   nothing reads `TerrainDef.move_cost` directly except the default.
 - **Damage.** `damage_model()`; `AttackRule`/`AreaRule` call
   `engine.damage_model.compute(state, attacker, defender, rng)`.

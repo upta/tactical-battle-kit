@@ -4,7 +4,8 @@ extends RefCounted
 ## Reachability for the default MoveRule. Costs come from the ruleset's
 ## movement_cost, never from the terrain directly; footprints are validated
 ## at every step; enemies block, allies may be passed through when the ruleset
-## allows, and nobody stops on another unit of the same layer.
+## allows, nobody stops on another unit of the same layer, and a cell the
+## ruleset says a mover cannot continue from is reached but never expanded.
 
 
 ## Cost for [param mover] to enter the cell configuration anchored at
@@ -73,6 +74,9 @@ static func reachable(state: BattleState, mover: BattleUnit, budget: int) -> Dic
 		var current: Vector2i = frontier[cheapest]
 		frontier.remove_at(cheapest)
 		var current_cost: int = best_cost[current]
+		# The origin always expands: a unit standing in such a cell still moves.
+		if current != mover.cell and not state.ruleset.can_continue_from(state, mover, current):
+			continue
 
 		for next: Vector2i in state.grid.neighbors(current):
 			var cost := step_cost(state, mover, next)

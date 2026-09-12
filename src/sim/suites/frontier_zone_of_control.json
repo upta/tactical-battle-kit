@@ -1,0 +1,16 @@
+{
+  "suite_id": "frontier_zone_of_control",
+  "description": "Zone of control as a pathfinder seam: with the frontier ruleset's zone_of_control on, no walked path ever passes through a cell beside an enemy - a unit may step in beside one, but the move ends there. The metric replays every move against who stood where at the time, so it catches a path that slipped past a unit that later died. Proves BattleRuleset.can_continue_from reaches Pathfinder.reachable; random play, because the frontier AI only ever approaches and stops, so it never runs past anyone; with the hook absent random armies walk through freely, which is the RED half of the claim.",
+  "battle": "res://examples/frontier/battles/river_crossing.json",
+  "runs": 20,
+  "seed": 5100,
+  "matchups": [
+    {"id": "random_vs_random", "ai": {"colonial": "random", "regular": "random"}}
+  ],
+  "overrides": {"ruleset": {"zone_of_control": true}},
+  "assertions": [
+    {"metric": "metrics.events.rejected", "comparator": "eq", "expected": 0},
+    {"metric": "metrics.events.moved", "comparator": "gt", "expected": 20},
+    {"metric": "custom.zoc_violations", "comparator": "eq", "expected": 0}
+  ]
+}

@@ -83,11 +83,12 @@ and gates itself with `can_use` (overwatch stance). *Why:* the watcher has
 already spent its turn, and a reaction that had to be "legal for the active
 turn" could never fire.
 
-**D16: `can_stop_at` is a ruleset strategy, separate from `movement_cost`.**
-"Pass over but never stop" (flyers over obstacles, cavalry over fences)
-cannot be expressed as a cost; the pathfinder asks the ruleset before it
-offers a destination. Added during the battlefield build as a deviation
-from its proposal, which had claimed no kit change.
+**D16: `can_stop_at` and `can_continue_from` are ruleset strategies,
+separate from `movement_cost`.** "Pass over but never stop" (flyers over
+walls) and "enter but never pass through" (a zone of control beside an
+enemy) cannot be expressed as costs; the pathfinder asks the ruleset before
+offering a destination and before expanding from one. Both were asked for by
+a consumer, over re-implementing the search, which would fork movement.
 
 **D17: `example-game/` is both the consumer fixture and the layout example.**
 Split them and one goes stale: an example nobody runs drifts, a fixture

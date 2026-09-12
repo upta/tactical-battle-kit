@@ -61,6 +61,14 @@ func can_stop_at(_state: BattleState, _unit: BattleUnit, _cell: Vector2i) -> boo
 	return true
 
 
+## May [param unit] keep walking after entering [param cell]? Default yes.
+## Override for "enter but never pass through" cells: a zone of control
+## beside an enemy, deep water, a gate that closes behind you. The cell
+## itself stays a destination; only the search stops expanding from it.
+func can_continue_from(_state: BattleState, _unit: BattleUnit, _cell: Vector2i) -> bool:
+	return true
+
+
 func move_budget(state: BattleState, unit: BattleUnit) -> int:
 	return unit.def.move
 
