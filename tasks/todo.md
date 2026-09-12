@@ -1,8 +1,7 @@
 # Todo
 
-Phase 2 in flight: tasks/phase-2.md (the sim as a test framework for
-consuming games). Every task is major; each goes through the
-architecture-proposal gate at /build.
+Phase 2 closed 2026-09-11 (the sim as a test framework for consuming
+games). No phase in flight; the next one starts with /plan.
 
 - [x] Task 2.1: `example-game/`, fixture and layout example, run in CI
       ✅ 2026-09-10 (two suites green from the foreign root; CI job `example-game`; simulate.ps1 now imports every run)
@@ -16,7 +15,8 @@ architecture-proposal gate at /build.
       ✅ 2026-09-11 (self-contained pages with whiskers, delta bars, sweep chart, heatmap; check_reports.gd in simulate.ps1 and CI)
 - [x] Task 2.6: `author-sim-suite` (grill-me interview) and `run-sim-suite` skills
       ✅ 2026-09-11 (one question per turn, never assumes a field; run skill ends with the page URL)
-- [ ] Checkpoint 2: ask one balance question of `example-game/` using only the two skills; read the page
+- [x] Checkpoint 2: ask one balance question of `example-game/` using only the two skills; read the page
+      ✅ 2026-09-11 (asked "what if sentries had 15 HP"; two suites and two pages came back; the /ship review then gave every sweep suite outcome assertions)
 
 ## Unplayed, carried
 
@@ -48,10 +48,6 @@ architecture-proposal gate at /build.
       sweep moved something" except through an absolute threshold on one
       cell. An `at_least ... of baseline` form is a suite-JSON contract
       change; propose it if the absolute thresholds start to feel fitted.
-- [ ] `ci95.<rate> lte x` at the checked-in run counts is a run-count guard
-      (Wilson's half-width peaks at 0.123 for 60 runs and 0.088 for 120),
-      not a data assertion. The skills should say so instead of calling it
-      "the error bars are tight enough to read".
 - [ ] `sentry_hp_baseline` and `sentry_hp_knee` both play 12 and 15; the
       two could fold into one sweep of 9, 12, 13, 14, 15 (about 45 s).
 - [ ] Grid sweeps (proposal item 3): `sweep` as a list, cross-product cells,
