@@ -61,8 +61,9 @@ static func register() -> void:
 ```
 
 Either the suite lists it, `"register": ["res://ai/raider_pack.gd"]`, or the
-CLI gets `--register`. Registrations are process-wide, so a pack a suite
-loads is visible to every suite after it in a `--suites` run.
+CLI gets `--register`. The CLI resets the registry before each suite, so a
+pack a suite loads is visible to that suite alone; a `--register` pack is
+visible to every suite in the run.
 
 ## What comes out
 

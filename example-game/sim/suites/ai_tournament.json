@@ -1,6 +1,6 @@
 {
   "suite_id": "ai_tournament",
-  "description": "Every AI the game knows, the shipped garrison AI, the experimental rush AI from the pack, and random, plays every other on the outpost from both sides. The standings table, not this suite's assertions, is the answer to which one to ship for which faction; the assertions only pin what must hold for the table to mean anything.",
+  "description": "Every AI the game knows, the shipped garrison AI, the experimental rush AI from the pack, and random, plays every other on the outpost from both sides. The standings pool both sides of an asymmetric map, so they rank AIs overall; the cell table below them is where to read which AI to ship for which faction (the rush AI as attacker is a different number from the rush AI as defender). The assertions only pin what must hold for the tables to mean anything.",
   "runs": 30,
   "seed": 400,
   "register": ["res://ai/raider_pack.gd"],

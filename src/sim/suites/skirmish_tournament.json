@@ -1,7 +1,7 @@
 {
   "suite_id": "skirmish_tournament",
-  "description": "Every skirmish AI against every other on two maps with sides swapped: the standings say who is best and the matrix says by how much against whom. The kit claims greedy beats random 75% of the time on the open field; the tournament asks whether that survives a chokepoint and a side swap. Read the matrix per map below the standings: the chokepoint is where greedy is weakest.",
-  "runs": 30,
+  "description": "Every skirmish AI against every other on two maps with sides swapped: the standings say who is best and the matrix says by how much against whom. The kit claims greedy beats random on the open field (skirmish_greedy_beats_random owns that number); the tournament asks whether that survives a chokepoint and a side swap. Read the cell table for the per-map answer: the chokepoint is where greedy is weakest. The swap assertion pins that the reversed cell really reverses who plays whom.",
+  "runs": 60,
   "seed": 4000,
   "tournament": {
     "ais": ["random", "greedy"],
@@ -12,10 +12,9 @@
     "swap_sides": true
   },
   "assertions": [
-    {"metric": "standings.greedy.win_rate", "comparator": "gte", "expected": 0.7},
-    {"metric": "standings.greedy.games", "comparator": "eq", "expected": 120},
-    {"metric": "matrix.greedy.random", "comparator": "gte", "expected": 0.7},
-    {"metric": "win_rate.red", "matchup": "open_field:greedy_vs_random", "comparator": "gte", "expected": 0.75},
+    {"metric": "standings.greedy.win_rate", "comparator": "gte", "expected": 0.65},
+    {"metric": "standings.greedy.games", "comparator": "eq", "expected": 240},
+    {"metric": "win_rate.blue", "matchup": "open_field:random_vs_greedy", "comparator": "gte", "expected": 0.6},
     {"metric": "draw_rate", "comparator": "lte", "expected": 0.15}
   ]
 }

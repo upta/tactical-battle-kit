@@ -59,7 +59,15 @@ func _initialize() -> void:
 
 	var reports: Array[Dictionary] = []
 	var worst := SimSuite.EXIT_PASS
+	var cli_packs: Array = args.get("register", [])
 	for path: String in paths:
+		# Every suite starts from the same registry: the builtins plus the
+		# CLI's packs. Rulesets re-register on every battle build, so a
+		# suite that forgets its own "register" fails here the way it would
+		# alone, not pass because an earlier suite loaded the pack.
+		AiRegistry.clear()
+		for registration: String in cli_packs:
+			SimSuite.register_pack(registration)
 		var report := _run_one(path, args, out_dir)
 		reports.append(report)
 		worst = maxi(worst, int(report.get("exit_code", SimSuite.EXIT_RUNTIME_ERROR)))

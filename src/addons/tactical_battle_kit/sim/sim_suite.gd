@@ -92,6 +92,9 @@ func run(suite: Dictionary) -> Dictionary:
 					return _fail_runtime(report, "Battle failed to build for matchup '%s'." % str(matchup["id"]), started)
 				var ais: Dictionary[String, AiController] = {}
 				var ai_map: Dictionary = matchup["ai"]
+				for named_faction: Variant in ai_map.keys():
+					if not state.factions.has(str(named_faction)):
+						return _fail_runtime(report, "Matchup '%s' names faction '%s', which battle '%s' does not have (factions: %s)." % [str(matchup["id"]), str(named_faction), state.battle_id, ", ".join(state.factions)], started)
 				for faction: String in state.factions:
 					var ai_id := str(ai_map.get(faction, state.faction_ai.get(faction, "random")))
 					var ai := AiRegistry.create(ai_id)
@@ -154,8 +157,9 @@ func _fail_runtime(report: Dictionary, message: String, started: int) -> Diction
 
 
 ## Load an AI pack: a script whose static register() puts AIs into the
-## AiRegistry. Returns "" or the problem. Registrations are process-wide,
-## so a pack named by one suite is visible to every suite after it.
+## AiRegistry. Returns "" or the problem. The CLI resets the registry
+## before each suite, so a pack is visible only to the suite that names it
+## (or to every suite when it came from --register).
 static func register_pack(path: String) -> String:
 	var script: GDScript = load(path)
 	if script == null:
@@ -332,8 +336,10 @@ func _resolve_sweep(suite: Dictionary) -> Array[Dictionary]:
 		points.append({"value": null, "overrides": {}})
 		return points
 	for value: Variant in values:
-		var overrides := {}
-		BattleLoader.set_dotted_path(overrides, path, value)
+		# Through normalize_overrides so a sweep root outside OVERRIDE_ROOTS
+		# gets the same warning an overrides block does instead of a silent
+		# sweep of nothing.
+		var overrides := normalize_overrides({path: value})
 		points.append({"value": value, "overrides": overrides})
 	return points
 
@@ -580,7 +586,8 @@ func _evaluate_assertions(suite: Dictionary, report: Dictionary) -> void:
 			var actual: Variant
 			var passed: bool
 			if relative:
-				actual = resolve_metric(matchup["delta"], metric)
+				# A delta leaf that does not exist is a typo, not "no change".
+				actual = resolve_metric(matchup["delta"], metric, false)
 				passed = actual != null and absf(float(actual)) <= float(expected)
 			else:
 				actual = resolve_metric(matchup["aggregate"], metric)
@@ -607,9 +614,10 @@ func _evaluate_assertions(suite: Dictionary, report: Dictionary) -> void:
 
 
 ## A leaf missing from an existing table of rates or counts reads as 0.0
-## (no run ended by that reason, nobody of that faction won). A missing
-## table is null and fails the assertion.
-static func resolve_metric(aggregate: Dictionary, path: String) -> Variant:
+## (no run ended by that reason, nobody of that faction won) unless
+## missing_leaf_is_zero is false. A missing table is null and fails the
+## assertion.
+static func resolve_metric(aggregate: Dictionary, path: String, missing_leaf_is_zero: bool = true) -> Variant:
 	var cursor: Variant = aggregate
 	var keys := path.split(".")
 	for i: int in keys.size():
@@ -619,7 +627,7 @@ static func resolve_metric(aggregate: Dictionary, path: String) -> Variant:
 		var table: Dictionary = cursor
 		if table.has(key):
 			cursor = table[key]
-		elif i == keys.size() - 1:
+		elif i == keys.size() - 1 and missing_leaf_is_zero:
 			return 0.0
 		else:
 			return null

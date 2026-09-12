@@ -1,6 +1,6 @@
 {
   "suite_id": "sentry_hp_baseline",
-  "description": "How much does sentry HP move the garrison's hold rate against the rush AI? 12 is the shipped value and the baseline; 9, 15 and 18 bracket it. Read the deltas table: a delta smaller than the intervals beside it is noise, and the assertions only pin that the intervals are tight enough to read and that no AI picked an illegal action.",
+  "description": "How much does sentry HP move the garrison's hold rate against the rush AI? 12 is the shipped value and the baseline; 9, 15 and 18 bracket it. What the table showed: 9 HP loses the outpost (about 10%), 12 holds it two games in three, 15 and 18 lock the raiders out entirely, and from 12 up the fight lasts the same six rounds (at 9 it ends a round sooner because sentries die first). The assertions pin the two ends of that so a sweep that stopped applying, or a garrison that stopped caring about HP, goes red; the middle is the sentry_hp_knee suite's question.",
   "battle": "res://battles/outpost.json",
   "runs": 60,
   "seed": 700,
@@ -11,6 +11,10 @@
   "sweep": {"path": "unit_defs.sentry.max_hp", "values": [9, 12, 15, 18]},
   "baseline": {"sweep_value": 12},
   "assertions": [
+    {"metric": "win_rate.garrison", "sweep_value": 9, "comparator": "lte", "expected": 0.4},
+    {"metric": "win_rate.garrison", "sweep_value": 15, "comparator": "gte", "expected": 0.85},
+    {"metric": "mean_rounds", "within": 1, "of": "baseline", "sweep_value": 15},
+    {"metric": "mean_rounds", "within": 1, "of": "baseline", "sweep_value": 18},
     {"metric": "ci95.win_rate.garrison", "comparator": "lte", "expected": 0.15},
     {"metric": "metrics.events.rejected", "comparator": "eq", "expected": 0}
   ]

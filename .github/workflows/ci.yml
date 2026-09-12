@@ -93,6 +93,29 @@ jobs:
           cat /tmp/reports.log
           grep -q '^REPORT CHECK COMPLETE: [1-9][0-9]* pages, 0 failures' /tmp/reports.log
 
+      - name: Prove the page check can fail, and the analysis embed renders
+        # A checker that never fails proves nothing: a page with an unclosed
+        # tag and no cells section, under a throwaway pointer outside the
+        # tree, must count as failures. Then the one path no suite run
+        # exercises: an analysis.md beside a real run, re-rendered, must put
+        # an analysis section on the page and the checker must demand it.
+        run: |
+          mkdir -p /tmp/broken/zz_broken/run
+          echo '{"path": "/tmp/broken/zz_broken/run"}' > /tmp/broken/zz_broken/latest.json
+          echo '{"suite_id": "zz_broken", "matchups": [], "verifications": []}' > /tmp/broken/zz_broken/run/report.json
+          printf '<h1>broken<div><p>unclosed</h1>\n' > /tmp/broken/zz_broken/run/report.html
+          godot --headless --path src --script res://tools/check_reports.gd -- --dir /tmp/broken > /tmp/broken.log 2>&1 || true
+          cat /tmp/broken.log
+          grep -q '^REPORT CHECK COMPLETE: 1 pages, [1-9]' /tmp/broken.log || { echo "The page check passed a broken page."; exit 1; }
+
+          run_dir=$(grep -E '^ARTIFACTS ' /tmp/sim.log | head -1 | sed 's/^ARTIFACTS //')
+          printf '# Reading\n\nWritten by CI to prove the analysis embed; not a real reading.\n' > "$run_dir/analysis.md"
+          godot --headless --path src --script res://addons/tactical_battle_kit/sim/sim_cli.gd -- --render "$run_dir" > /tmp/render.log 2>&1 || true
+          grep -E '^RENDERED ' /tmp/render.log || { cat /tmp/render.log; exit 1; }
+          grep -q 'id="analysis"' "$run_dir/report.html" || { echo "Rendered page has no analysis section."; exit 1; }
+          godot --headless --path src --script res://tools/check_reports.gd > /tmp/reports2.log 2>&1 || true
+          grep -q '^REPORT CHECK COMPLETE: [1-9][0-9]* pages, 0 failures' /tmp/reports2.log || { cat /tmp/reports2.log; exit 1; }
+
       - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -171,5 +194,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: example-game-reports
-          path: example-game/artifacts/sim/**/report.md
+          path: |
+            example-game/artifacts/sim/**/report.md
+            example-game/artifacts/sim/**/report.html
+            example-game/artifacts/sim/summary.html
           if-no-files-found: ignore

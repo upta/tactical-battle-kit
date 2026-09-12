@@ -122,6 +122,15 @@ static func build_with_ruleset(data: Dictionary, ruleset: BattleRuleset, overrid
 			return null
 		var unit := ruleset.make_unit(str(entry.get("id")), def, str(entry.get("faction")), _cell(entry.get("cell", [0, 0])), entry)
 		state.add_unit(unit)
+	# An override for a def no unit uses would otherwise apply to nothing and
+	# leave every sweep cell identical; a sim suite with a typo must not pass.
+	var applied_def_ids: Array[String] = []
+	for def: UnitDef in def_cache.values():
+		applied_def_ids.append(def.id)
+	for def_id: Variant in unit_def_overrides.keys():
+		if not applied_def_ids.has(str(def_id)):
+			push_error("Override names unit def '%s' but no unit in battle '%s' uses it (defs: %s)." % [str(def_id), state.battle_id, ", ".join(applied_def_ids)])
+			return null
 	return state
 
 

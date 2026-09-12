@@ -10,9 +10,10 @@ extends SceneTree
 #      that a browser would silently absorb.
 #   2. Godot's XMLParser reads the page to the end without error, so the
 #      markup is also parseable as XML (escaping, quoting, entities).
-#   3. Section ids: "cells" always; "deltas" when the report has a baseline;
-#      "standings" when it has a tournament; "analysis" when analysis.md
-#      sits beside it.
+#   3. Section ids: "cells" always; "assertions" when the report verified
+#      any; "deltas" when any cell carries a delta; "sweep" when the suite
+#      swept a path; "standings" when it has a tournament; "analysis" when
+#      analysis.md sits beside it.
 #
 #   godot --headless --path src --script res://tools/check_reports.gd [-- --dir <artifacts/sim dir>]
 #
@@ -61,9 +62,17 @@ func _find_pages(root: String) -> Array[Dictionary]:
 		if not (report is Dictionary):
 			_failures.append("%s has no readable report.json" % run_dir)
 			continue
-		var required: Array[String] = ["cells", "assertions"]
-		if report.has("baseline"):
+		# Mirror what the renderer promises: a section appears when the
+		# report has something to put in it, not when the suite has the key.
+		var required: Array[String] = ["cells"]
+		if not (report.get("verifications", []) as Array).is_empty():
+			required.append("assertions")
+		var matchups: Array = report.get("matchups", [])
+		if matchups.any(func(m: Dictionary) -> bool: return m.has("delta")):
 			required.append("deltas")
+		var sweep: Variant = report.get("sweep")
+		if sweep is Dictionary and not str((sweep as Dictionary).get("path", "")).is_empty():
+			required.append("sweep")
 		if report.has("tournament"):
 			required.append("standings")
 		if FileAccess.file_exists(run_dir.path_join("analysis.md")):

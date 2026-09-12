@@ -1,0 +1,20 @@
+{
+  "suite_id": "sentry_hp_knee",
+  "description": "Between 12 and 15 sentry HP, where the wider sweep went from holding two games in three to a lockout: is it a cliff or a slope? 12 is the shipped value and the baseline; 13, 14 and 15 step through it at 120 runs so a ten-point difference is readable. What the table showed: a slope of about ten points per HP (69%, 80%, 91%, 98%) and no change in pace, so 13 is the value for a garrison that usually holds while the rush still has a real shot. The assertions pin the ends; read the deltas table for the slope.",
+  "battle": "res://battles/outpost.json",
+  "runs": 120,
+  "seed": 710,
+  "register": ["res://ai/raider_pack.gd"],
+  "matchups": [
+    {"id": "garrison_vs_rush", "ai": {"garrison": "garrison", "raiders": "rush"}}
+  ],
+  "sweep": {"path": "unit_defs.sentry.max_hp", "values": [12, 13, 14, 15]},
+  "baseline": {"sweep_value": 12},
+  "assertions": [
+    {"metric": "win_rate.garrison", "sweep_value": 12, "comparator": "lte", "expected": 0.85},
+    {"metric": "win_rate.garrison", "sweep_value": 15, "comparator": "gte", "expected": 0.9},
+    {"metric": "mean_rounds", "within": 1, "of": "baseline"},
+    {"metric": "ci95.win_rate.garrison", "comparator": "lte", "expected": 0.10},
+    {"metric": "metrics.events.rejected", "comparator": "eq", "expected": 0}
+  ]
+}

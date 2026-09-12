@@ -25,10 +25,12 @@ their game, so:
 - **No schema in the conversation.** No metric paths, JSON keys, assertion
   syntax or comparator names in a question or a summary. You translate:
   `win_rate.garrison` is "how often the garrison holds",
-  `ci95.win_rate.garrison lte 0.15` is "the error bars are tight enough to
-  read", `metrics.events.rejected eq 0` is "the AI never made an illegal
-  move", `baseline` is "compared to today's value". The JSON is written
-  once at the end; show it only if asked.
+  `ci95.win_rate.garrison lte 0.15` is "it was run enough times to read"
+  (at the checked-in run counts that bound cannot fail on the data; it
+  guards against a re-run with fewer runs), `metrics.events.rejected eq 0`
+  is "the AI never made an illegal move", `baseline` is "compared to
+  today's value". The JSON is written once at the end; show it only if
+  asked.
 - **Ask only what you cannot read or infer.** The codebase knows AI ids,
   faction ids and shipped values; read them and say what you found in one
   sentence. "Just seeing how it plays out" answers the claim, the
@@ -41,8 +43,8 @@ their game, so:
   and takes 25 seconds" is right. "±0.12 at n=60" is not.
 - **Close in plain words.** Before running: "Wrote `sim/suites/sentry_hp.json`:
   four games' worth of sentry HP against the rush AI, 60 runs each, and it
-  fails only if the error bars get too wide or an AI makes an illegal
-  move." Then say which answers you filled in yourself.
+  fails if 9 HP ever holds the outpost, if 15 ever loses it, or if an AI
+  makes an illegal move." Then say which answers you filled in yourself.
 
 ## The checklist (what you must know before writing; never recite it)
 
@@ -86,7 +88,11 @@ their game, so:
 9. **Assertions**: only what must hold for the table to mean anything.
    Absolute thresholds come from an existing claim in another suite or from
    the user, never from what one seed happened to produce. Relative ones
-   are `{"metric", "within": x, "of": "baseline"}`.
+   are `{"metric", "within": x, "of": "baseline"}`. A sweep suite needs at
+   least one absolute assertion on a cell far from the baseline (the
+   losing end, the lockout end), with the threshold several intervals
+   away from the number; otherwise four identical cells pass, and a sweep
+   that stopped applying is invisible.
 10. **Id and description**: `suite_id` is the file name; `description` is
     the claim plus how to read the report, one or two sentences.
 
@@ -133,8 +139,9 @@ Sweep with baseline:
   "sweep": {"path": "unit_defs.raider.attack", "values": [5, 6, 7]},
   "baseline": {"sweep_value": 5},
   "assertions": [
-    {"metric": "ci95.win_rate.garrison", "comparator": "lte", "expected": 0.15},
-    {"metric": "mean_rounds", "within": 3, "of": "baseline"}
+    {"metric": "win_rate.garrison", "sweep_value": 6, "comparator": "lte", "expected": 0.2},
+    {"metric": "mean_rounds", "sweep_value": 6, "comparator": "lte", "expected": 5.0},
+    {"metric": "ci95.win_rate.garrison", "comparator": "lte", "expected": 0.15}
   ]
 }
 ```

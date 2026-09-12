@@ -9,7 +9,7 @@ architecture-proposal gate at /build.
 - [x] Task 2.2: `--suites <dir>`, SUMMARY line, suite-level `register`
       ✅ 2026-09-10 (one command per project; failure path proven in CI with a throwaway suite; rush AI registered from a pack)
 - [x] Task 2.3: tournament block, standings and pairwise matrix
-      ✅ 2026-09-10 (round-robin over AIs × battles with side swap; found rush beats garrison 77% in the example game)
+      ✅ 2026-09-10 (round-robin over AIs × battles with side swap; in the example game rush beats the garrison AI 53% ±17 as the attacker and 100% as the defender; the pooled 77% is both sides of an asymmetric map)
 - [x] Task 2.4: baseline cell, deltas, ci95, `within ... of baseline`
       ✅ 2026-09-10 (Wilson and normal intervals on every aggregate; deltas table; one raider attack point flips the outpost 68% to 3%)
 - [x] Task 2.5: `report.html` and `summary.html`, `--render` with `analysis.md`
@@ -31,13 +31,29 @@ architecture-proposal gate at /build.
       floor is not supported by the numbers. Its description calls below
       25% a rule problem; decide whether the first-mover penalty is the rule
       or the greedy AI, then move the floor or fix the cause.
-- [ ] `rush_raiders_vs_garrison` reads 75% at seed 300 and 47% at seed 400
-      with ±15 intervals; its 0.5 floor holds only by seed. Raise runs or
-      loosen the claim.
-- [ ] Example game: the shipped garrison AI loses to the experimental rush
-      AI 77% of the time and never wins as the attacker (ai_tournament).
-      Decide whether the example should ship the better AI or keep the gap
-      as the thing the tournament table shows.
+- [ ] Example game: the shipped garrison AI never wins as the attacker and
+      loses to the rush AI as the defender about a third of the time
+      (ai_tournament cell table). Decide whether the example should ship
+      the better AI or keep the gap as the thing the tournament shows.
+- [ ] Wilson intervals are drawn centered on the observed rate, but the
+      Wilson interval is not: at 0% with 30 runs the true band is 0 to 11%
+      and the page draws 0 to 6%. Emitting the interval's center or its
+      ends beside `ci95` is a report-shape change, so it needs a proposal.
+- [ ] `./validate.ps1` deletes `src/artifacts/sim/` on every run: the
+      validation kit's prune removes any artifact directory that is not a
+      scenario id, and `sim` is not reserved the way `suites` and `stats`
+      are. Either ask the submodule to reserve it or move the sim output
+      root. Until then the /ship skip rule for the sim gate can never hold.
+- [ ] A `within` assertion has no lower bound, so no suite can say "this
+      sweep moved something" except through an absolute threshold on one
+      cell. An `at_least ... of baseline` form is a suite-JSON contract
+      change; propose it if the absolute thresholds start to feel fitted.
+- [ ] `ci95.<rate> lte x` at the checked-in run counts is a run-count guard
+      (Wilson's half-width peaks at 0.123 for 60 runs and 0.088 for 120),
+      not a data assertion. The skills should say so instead of calling it
+      "the error bars are tight enough to read".
+- [ ] `sentry_hp_baseline` and `sentry_hp_knee` both play 12 and 15; the
+      two could fold into one sweep of 9, 12, 13, 14, 15 (about 45 s).
 - [ ] Grid sweeps (proposal item 3): `sweep` as a list, cross-product cells,
       one report table per secondary axis. SPEC lists it as open.
 - [ ] Per-def usage metrics (proposal item 6): needs an `action_applied`
